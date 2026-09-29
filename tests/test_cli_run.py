@@ -78,6 +78,37 @@ def test_leaky_signal_aborts_the_run_and_records_nothing_for_it(lab_env):
     assert ledger.count_trials() == 0
 
 
+def test_later_grid_point_failure_keeps_earlier_points_recorded(lab_env):
+    write_spec(
+        lab_env / "hypotheses",
+        "H-9997",
+        {"window": {"values": [5]}, "leaky": {"values": [False, True]}},
+    )
+    result = runner.invoke(app, ["run", "H-9997"])
+    assert result.exit_code == 1
+    trials = ledger.read_trials()
+    assert [(t["hypothesis_id"], t["n"]) for t in trials] == [("H-9997", 1)]
+    assert trials[0]["params"]["leaky"] is False
+    assert ledger.count_trials() == 1
+    assert ledger.trial_matrix().shape[1] == 1
+
+
+def test_concurrent_appends_get_distinct_trial_numbers(tmp_path, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    monkeypatch.setenv("LAB_LEDGER_DIR", str(tmp_path / "ledger"))
+    series = pd.Series([0.01, 0.02], index=pd.to_datetime(["2020-01-02", "2020-01-03"]))
+
+    def add(i):
+        return ledger.append_trial({"hypothesis_id": "H-0001", "params": {"i": i}}, series)["n"]
+
+    with ThreadPoolExecutor(8) as pool:
+        ns = list(pool.map(add, range(24)))
+    assert sorted(ns) == list(range(1, 25))
+    assert ledger.count_trials() == 24
+    assert ledger.trial_matrix().shape[1] == 24
+
+
 def test_unknown_hypothesis_fails_cleanly(lab_env):
     result = runner.invoke(app, ["run", "H-0042"])
     assert result.exit_code == 1

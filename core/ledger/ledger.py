@@ -7,6 +7,7 @@ corrections use. Pre-registration checks (``prereg.py``) are Milestone 4 and not
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 from datetime import UTC, datetime
@@ -56,22 +57,32 @@ def count_trials() -> int:
 def append_trial(record: dict, returns: pd.Series) -> dict:
     """Write ``returns`` to parquet, then append ``record`` (plus bookkeeping) as one line.
 
-    The parquet lands first so a line never points at a missing file. Returns the stored record.
+    An exclusive lock on ``trials.jsonl`` spans the count, the parquet write and the append, so
+    concurrent runs get distinct, gap-free trial numbers. The parquet lands first so a line never
+    points at a missing file. Returns the stored record.
     """
-    n = count_trials() + 1
-    trial_id = f"{record['hypothesis_id']}-{n:06d}"
-    rel_path = f"returns/{trial_id}.parquet"
     returns_dir().mkdir(parents=True, exist_ok=True)
-    returns.rename("return").to_frame().to_parquet(ledger_dir() / rel_path)
-    stored = {
-        "trial_id": trial_id,
-        "n": n,
-        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
-        **_jsonable(record),
-        "returns_path": rel_path,
-    }
-    with trials_path().open("a", encoding="utf-8") as f:
-        f.write(json.dumps(stored, sort_keys=True, allow_nan=False) + "\n")
+    with trials_path().open("a+b") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.seek(0)
+            n = sum(1 for line in f if line.strip()) + 1
+            trial_id = f"{record['hypothesis_id']}-{n:06d}"
+            rel_path = f"returns/{trial_id}.parquet"
+            returns.rename("return").to_frame().to_parquet(ledger_dir() / rel_path)
+            stored = {
+                "trial_id": trial_id,
+                "n": n,
+                "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+                **_jsonable(record),
+                "returns_path": rel_path,
+            }
+            f.seek(0, os.SEEK_END)
+            f.write((json.dumps(stored, sort_keys=True, allow_nan=False) + "\n").encode())
+            f.flush()
+            os.fsync(f.fileno())
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
     return stored
 
 
