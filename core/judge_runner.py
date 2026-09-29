@@ -26,14 +26,15 @@ from core.engine.backtest import BacktestResult, ExecutionConfig, daily_risk_fre
 from core.engine.metrics import TRADING_DAYS, cagr
 from core.judge.holdout import score_holdout
 from core.judge.verdict import JUDGE_SEED, JudgeInputs, judge, thresholds_hash
-from core.ledger import ledger
+from core.ledger import ledger, prereg
+from core.ledger.spec import HypothesisSpec, SpecError, parse_spec
 from core.runner import (
     RF_SERIES,
-    HypothesisSpec,
     RunError,
     build_inputs,
     find_spec,
     load_signal_factory,
+    load_signal_factory_from_source,
     load_spec,
 )
 
@@ -64,7 +65,9 @@ def _config_from(record: dict) -> ExecutionConfig:
     return ExecutionConfig(**record["execution"])
 
 
-def prepare(hypothesis_id: str) -> Context:
+def prepare(hypothesis_id: str, frozen: bool = False) -> Context:
+    """Assemble the chosen trial's inputs. ``frozen`` loads the spec and signal from the trial's
+    pre-registration commit instead of the working tree (used for hold-out scoring)."""
     spec_path = find_spec(hypothesis_id)
     spec = load_spec(spec_path)
     if spec.id != hypothesis_id:
@@ -73,7 +76,15 @@ def prepare(hypothesis_id: str) -> Context:
     if not trials:
         raise RunError(f"{hypothesis_id} has no trials in the ledger; run `lab run` first")
     chosen = choose_trial(trials)
-    factory = load_signal_factory(spec)
+    if frozen:
+        spec_bytes, signal_bytes = prereg.verify_frozen(prereg.repo_root(spec_path), chosen)
+        try:
+            spec = parse_spec(spec_bytes, f"{chosen['spec_path']}@{chosen['git_commit'][:12]}")
+        except SpecError as exc:
+            raise RunError(str(exc)) from exc
+        factory = load_signal_factory_from_source(spec, signal_bytes)
+    else:
+        factory = load_signal_factory(spec)
     features, returns, rf, _ = build_inputs(spec)
     config = _config_from(chosen)
     result = run_backtest(factory(**chosen["params"]), features, returns, rf, config)
@@ -124,9 +135,11 @@ def judge_inputs(ctx: Context) -> JudgeInputs:
     )
 
 
-def judge_hypothesis(hypothesis_id: str, seed: int = JUDGE_SEED) -> dict:
+def judge_hypothesis(
+    hypothesis_id: str, seed: int = JUDGE_SEED, ctx: Context | None = None
+) -> dict:
     """Run the full train battery and write ``results/<id>/verdict.json``."""
-    ctx = prepare(hypothesis_id)
+    ctx = ctx or prepare(hypothesis_id)
     verdict = judge(
         judge_inputs(ctx),
         load_thresholds(),
@@ -175,21 +188,52 @@ def _holdout_run(ctx: Context):
 def holdout_hypothesis(hypothesis_id: str, seed: int = JUDGE_SEED) -> dict:
     """Score the chosen point once on the hold-out; returns only pass/fail and a timestamp.
 
-    Refuses unless the train verdict is ``advance``. The ledger record and the one-shot refusal
-    are Milestone 4 and are not enforced here.
+    Refuses unless the key is set, the hypothesis has no attempt on record, and a fresh train
+    verdict on the *frozen* spec and signal (loaded from the pre-registration commit) is
+    ``advance``. The attempt is recorded in ``ledger/holdout_attempts.jsonl`` after the slice is
+    decrypted and before the signal sees it, so the one shot is used even if scoring then crashes.
     """
     key = os.environ.get("LAB_HOLDOUT_KEY")
     if not key:
         raise RunError("LAB_HOLDOUT_KEY is not set (human-run command)")
-    verdict = judge_hypothesis(hypothesis_id, seed=seed)
+    if ledger.holdout_attempted(hypothesis_id):
+        raise ledger.HoldoutAlreadyScoredError(
+            f"{hypothesis_id} has already been scored on the hold-out; each hypothesis gets one "
+            "attempt"
+        )
+    ctx = prepare(hypothesis_id, frozen=True)
+    verdict = judge_hypothesis(hypothesis_id, seed=seed, ctx=ctx)
     if verdict["train_verdict"] != "advance":
         raise RunError(f"{hypothesis_id}: train verdict is reject; the hold-out is not scored")
-    ctx = prepare(hypothesis_id)
     train_excess = cagr(ctx.result.returns) - cagr(ctx.result.benchmarks["buy_and_hold"].returns)
-    return score_holdout(
-        hypothesis_id,
-        _holdout_run(ctx),
-        train_excess,
-        load_thresholds().holdout,
-        key=key,
-    )
+    started = False
+
+    def reserve() -> None:
+        nonlocal started
+        ledger.reserve_holdout_attempt(
+            {
+                "hypothesis_id": hypothesis_id,
+                "trial_id": ctx.chosen["trial_id"],
+                "git_commit": ctx.chosen["git_commit"],
+                "spec_hash": ctx.chosen["spec_hash"],
+                "signal_hash": ctx.chosen["signal_hash"],
+                "thresholds_hash": verdict["thresholds_hash"],
+            }
+        )
+        started = True
+
+    try:
+        result = score_holdout(
+            hypothesis_id,
+            _holdout_run(ctx),
+            train_excess,
+            load_thresholds().holdout,
+            key=key,
+            on_decrypted=reserve,
+        )
+    except Exception:
+        if started:
+            ledger.record_holdout_outcome(hypothesis_id, "error")
+        raise
+    ledger.record_holdout_outcome(hypothesis_id, result["holdout_verdict"])
+    return result

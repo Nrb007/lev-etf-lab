@@ -1,26 +1,24 @@
 """``lab run``: backtest a hypothesis's parameter grid on the train split (SPEC Section 5.4).
 
 Every grid point is backtested, its return series and one trial line are written to the ledger,
-and N goes up by one. Pre-registration checks (committed spec, hash, commit date) are Milestone 4
-and not enforced here.
+and N goes up by one. Before anything runs, ``core.ledger.prereg`` refuses a spec or signal module
+that is not committed, is dated after the run, or no longer matches the ledger's spec hash.
 
-A hypothesis spec follows SPEC Section 7.1. Its ``signal_module`` is a Python file exposing
-``make_signal(**params) -> Signal``.
+A hypothesis spec follows SPEC Section 7.1 (``core.ledger.spec``). Its ``signal_module`` is a Python
+file exposing ``make_signal(**params) -> Signal``. Ledger reads and writes go through
+``core.ledger.ledger``; this module only assembles inputs and calls it.
 """
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import itertools
 import os
-import subprocess
+import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
 
 import pandas as pd
-import yaml
-from pydantic import BaseModel, ConfigDict, Field
 
 from core.config import CONFIG_DIR
 from core.data import cache
@@ -28,7 +26,8 @@ from core.data.splits import load_prices
 from core.data.synthetic import daily_returns, research_prices
 from core.engine.backtest import BacktestResult, ExecutionConfig, daily_risk_free, run_backtest
 from core.engine.signal_api import Signal
-from core.ledger import ledger
+from core.ledger import ledger, prereg
+from core.ledger.spec import HypothesisSpec, SpecError, parse_spec
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 RF_SERIES = "DGS3MO"
@@ -36,30 +35,6 @@ RF_SERIES = "DGS3MO"
 
 class RunError(RuntimeError):
     """The hypothesis cannot be run (missing spec, bad signal module, missing data)."""
-
-
-class _Loose(BaseModel):
-    model_config = ConfigDict(extra="ignore", frozen=True)
-
-
-class ParamGrid(_Loose):
-    values: list
-
-
-class Universe(_Loose):
-    fund: str
-    underlying: str | None = None
-    research_universe: Literal["real", "synthetic_long"] = "real"
-    leverage: float = 3
-
-
-class HypothesisSpec(_Loose):
-    """The fields the runner needs from SPEC Section 7.1; strict validation is Milestone 4."""
-
-    id: str = Field(pattern=r"^H-\d{4}$")
-    universe: Universe
-    signal_module: str
-    params: dict[str, ParamGrid] = {}
 
 
 def hypotheses_dir() -> Path:
@@ -78,25 +53,42 @@ def find_spec(hypothesis_id: str) -> Path:
 
 def load_spec(path: Path) -> HypothesisSpec:
     try:
-        return HypothesisSpec.model_validate(yaml.safe_load(path.read_text()))
-    except (ValueError, yaml.YAMLError) as exc:
-        raise RunError(f"{path.name}: invalid spec: {exc}") from exc
+        return parse_spec(path.read_text(), path.name)
+    except SpecError as exc:
+        raise RunError(str(exc)) from exc
 
 
-def load_signal_factory(spec: HypothesisSpec, base: Path | None = None):
-    """Import the spec's signal module (path relative to the repo root, or absolute)."""
+def signal_path(spec: HypothesisSpec, base: Path | None = None) -> Path:
+    """The spec's signal module (path relative to the repo root, or absolute)."""
     module_path = Path(spec.signal_module)
     if not module_path.is_absolute():
         module_path = (base or hypotheses_dir().parent) / module_path
     if not module_path.exists():
         raise RunError(f"{spec.id}: signal module {module_path} not found")
-    module_spec = importlib.util.spec_from_file_location(f"_signal_{spec.id}", module_path)
+    return module_path
+
+
+def _import_factory(spec_id: str, module_path: Path):
+    module_spec = importlib.util.spec_from_file_location(f"_signal_{spec_id}", module_path)
     module = importlib.util.module_from_spec(module_spec)
     module_spec.loader.exec_module(module)
     factory = getattr(module, "make_signal", None)
     if factory is None:
         raise RunError(f"{module_path.name} must define make_signal(**params) -> Signal")
     return factory
+
+
+def load_signal_factory(spec: HypothesisSpec, base: Path | None = None):
+    """Import the spec's signal module from the working tree."""
+    return _import_factory(spec.id, signal_path(spec, base))
+
+
+def load_signal_factory_from_source(spec: HypothesisSpec, source: bytes):
+    """Import a signal module from its committed bytes (the frozen hold-out signal)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / Path(spec.signal_module).name
+        path.write_bytes(source)
+        return _import_factory(spec.id, path)
 
 
 def grid_points(spec: HypothesisSpec) -> list[dict]:
@@ -137,26 +129,19 @@ def build_inputs(spec: HypothesisSpec) -> tuple[pd.DataFrame, pd.Series, pd.Seri
     return features, returns, rf, meta
 
 
-def _git_commit() -> str | None:
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=REPO_ROOT, check=True
-        )
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    return out.stdout.strip()
-
-
-def _file_hash(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
 def run_hypothesis(hypothesis_id: str, config: ExecutionConfig | None = None) -> dict:
     """Backtest every grid point, record it in the ledger, and return a JSON-able summary."""
     spec_path = find_spec(hypothesis_id)
     spec = load_spec(spec_path)
     if spec.id != hypothesis_id:
         raise RunError(f"{spec_path.name} declares id {spec.id}, expected {hypothesis_id}")
+    run_at = datetime.now(UTC)
+    reg = prereg.verify_registration(
+        spec_path,
+        signal_path(spec),
+        run_at=run_at,
+        prior_trials=[t for t in ledger.read_trials() if t["hypothesis_id"] == hypothesis_id],
+    )
     factory = load_signal_factory(spec)
     points = grid_points(spec)
     if not points:
@@ -166,9 +151,13 @@ def run_hypothesis(hypothesis_id: str, config: ExecutionConfig | None = None) ->
 
     common = {
         "hypothesis_id": hypothesis_id,
-        "spec_hash": _file_hash(spec_path),
-        "thresholds_hash": _file_hash(CONFIG_DIR / "thresholds.yaml"),
-        "git_commit": _git_commit(),
+        "spec_hash": reg.spec_hash,
+        "signal_hash": reg.signal_hash,
+        "spec_path": reg.spec_path,
+        "signal_path": reg.signal_path,
+        "thresholds_hash": prereg.file_hash(CONFIG_DIR / "thresholds.yaml"),
+        "git_commit": reg.commit,
+        "registered_commit_at": reg.committed_at.isoformat(),
         "universe": meta,
         "execution": {
             "cost_bps": config.cost_bps,

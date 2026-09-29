@@ -6,8 +6,9 @@ it to a caller-supplied ``run`` that executes the frozen signal, judges the resu
 returned; the full metrics go to ``results/holdout/<id>.json`` (deny-listed for agents, read by
 the human-run dashboard build).
 
-Not here (Milestone 4): the ledger record and the refusal of a second attempt, loading the frozen
-signal from its pre-registration commit, and requiring a prior ``advance`` verdict.
+The one-shot rule, the pre-registered (frozen) signal and the ``advance`` precondition are enforced
+by the caller (``core/judge_runner.py``); ``on_decrypted`` is the seam where it consumes the
+hypothesis's single attempt: after the slice is decrypted, before the signal ever sees it.
 """
 
 from __future__ import annotations
@@ -68,9 +69,15 @@ def score_holdout(
     key: bytes | str,
     holdout_path: Path | None = None,
     results_dir: Path | None = None,
+    on_decrypted: Callable[[], None] | None = None,
 ) -> dict:
-    """Decrypt, run, judge. Returns ``{"hypothesis_id", "holdout_verdict", "scored_at"}`` only."""
+    """Decrypt, run, judge. Returns ``{"hypothesis_id", "holdout_verdict", "scored_at"}`` only.
+
+    A missing file or wrong key raises before ``on_decrypted`` is called, so it costs no attempt.
+    """
     frame = decrypt_holdout(holdout_path or cache.holdout_path(), key)
+    if on_decrypted is not None:
+        on_decrypted()
     strategy, benchmark, rf = run(frame)
     passed, metrics = holdout_passes(strategy, benchmark, rf, train_excess_return, thresholds)
     scored_at = datetime.now(UTC).isoformat(timespec="seconds")

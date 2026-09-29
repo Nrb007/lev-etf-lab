@@ -28,6 +28,7 @@ from core.engine.backtest import BacktestError, LeakageError
 from core.engine.signal_api import SignalError
 from core.judge.common import JudgeError
 from core.judge_runner import holdout_hypothesis, judge_hypothesis
+from core.ledger.ledger import LedgerError
 from core.runner import RunError, run_hypothesis
 
 app = typer.Typer(help="lev-etf-lab command line.", no_args_is_help=True)
@@ -61,6 +62,7 @@ _JUDGE_ERRORS = (
     BacktestError,
     LeakageError,
     SignalError,
+    LedgerError,
     CacheMissError,
     CacheCorruptError,
     ValueError,
@@ -158,6 +160,7 @@ def run(
         result = run_hypothesis(hypothesis_id)
     except (
         RunError,
+        LedgerError,
         BacktestError,
         LeakageError,
         SignalError,
