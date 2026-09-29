@@ -1,0 +1,641 @@
+{
+  "generated_at": "2026-09-29T18:26:47+00:00",
+  "hard_error_count": 0,
+  "hard_errors": [],
+  "passed": true,
+  "series": {
+    "FRED:DFF": {
+      "alignment": {
+        "dropped_non_session": 7938,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "335dd6859c81a6778fc91c6f2d801b57cf03325d2b58a0bc99abb789ec0bad4e",
+      "first_date": "1954-07-01",
+      "issues": [],
+      "kind": "rate",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "rows": 17598
+    },
+    "FRED:DGS3MO": {
+      "alignment": {
+        "dropped_non_session": 12,
+        "forward_fill": 101,
+        "missing": 0
+      },
+      "content_hash": "7fddbb34e441c417da7b458e5e603142731840d70f86196c3251aac0b1c29134",
+      "first_date": "1981-09-01",
+      "issues": [],
+      "kind": "rate",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "rows": 10775
+    },
+    "QLD": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "de6b67e0ca9c53aa6f0a98142ea97fd7dfbb80a5545b469ff5bcfb688902186b",
+      "first_date": "2006-06-21",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 4515,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "QQQ": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "e79e845448a05711280153d9f651a8c61aad83c3ee6fe318e12db72a36428798",
+      "first_date": "1999-03-10",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 6347,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SMH": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "521449d2d4b4b4c253454c492641f561623e6963471b968c3b8db7df71193765",
+      "first_date": "2000-06-05",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 6034,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SOXL": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "ee30f510063ee0f93f87ff81549b2f74be91e8869baa5d560822f00ca6d6b7e0",
+      "first_date": "2010-03-11",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 3579,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SOXS": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "f765fa5238112420124700c6b8128c6871340ad2d7bd0b44d1ae80a757b25451",
+      "first_date": "2010-03-11",
+      "issues": [
+        {
+          "check": "return_outliers",
+          "detail": "1 daily returns beyond +/-40%",
+          "severity": "warning"
+        }
+      ],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [
+          {
+            "date": "2020-03-16",
+            "return": 0.46254987121812996
+          }
+        ],
+        "flagged_count": 1,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 3579,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SOXX": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "094ab6b6e3cba2dc75945adb6abc3452528e1872c2f7d6507e5f04d6bbb9d197",
+      "first_date": "2001-07-13",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 5755,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SQQQ": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "c40293f65fcf0b2788387fd1a7e731e9128daa24201cb3e4b9c7d35c99bff2ba",
+      "first_date": "2010-02-11",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 3598,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SYNTH:SOXL:3x": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "69aeee6cee6ce3cb8a804a0b670c16dd618fdd7b94304b91b1214c1354be165a",
+      "first_date": "2001-07-16",
+      "issues": [
+        {
+          "check": "return_outliers",
+          "detail": "1 daily returns beyond +/-40%",
+          "severity": "warning"
+        }
+      ],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [
+          {
+            "date": "2020-03-16",
+            "return": -0.4569310291261671
+          }
+        ],
+        "flagged_count": 1,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 5754,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "SYNTH:TQQQ:3x": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "164dbc0752005e64c53296deae4d2c1b47e0f6aafedf04a973792e9450c8f42c",
+      "first_date": "1999-03-11",
+      "issues": [
+        {
+          "check": "return_outliers",
+          "detail": "1 daily returns beyond +/-40%",
+          "severity": "warning"
+        }
+      ],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [
+          {
+            "date": "2001-01-03",
+            "return": 0.5046807374543838
+          }
+        ],
+        "flagged_count": 1,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 6346,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "TECL": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "b3117a815bcf0193dfdb5b243d92c749433c36c7798fe262675f8fb57b6c74fd",
+      "first_date": "2008-12-30",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 3879,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "TQQQ": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "d348cc29ee8ffbfef5122d75c9c4d745521e3d405938b1da708f62dbc301ea9f",
+      "first_date": "2010-02-11",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 3598,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "^VIX": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "9585de03758ad38bf2966359fe837719e97e7f7d9bdd733f68f63db711b8d085",
+      "first_date": "1990-01-02",
+      "issues": [
+        {
+          "check": "return_outliers",
+          "detail": "21 daily returns beyond +/-40% (incl. 1 beyond +/-80%)",
+          "severity": "warning"
+        }
+      ],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [
+          {
+            "date": "1990-07-23",
+            "return": 0.5150351971717058
+          },
+          {
+            "date": "1990-08-03",
+            "return": 0.40675474017673463
+          },
+          {
+            "date": "1991-11-15",
+            "return": 0.5171919947922279
+          },
+          {
+            "date": "1994-02-04",
+            "return": 0.4186046511627908
+          },
+          {
+            "date": "2007-02-27",
+            "return": 0.6421524746523621
+          },
+          {
+            "date": "2011-08-08",
+            "return": 0.5
+          },
+          {
+            "date": "2013-04-15",
+            "return": 0.43200662163099346
+          },
+          {
+            "date": "2015-08-21",
+            "return": 0.4644723918750533
+          },
+          {
+            "date": "2015-08-24",
+            "return": 0.45344276419788976
+          },
+          {
+            "date": "2016-06-24",
+            "return": 0.49333334660184547
+          },
+          {
+            "date": "2017-05-17",
+            "return": 0.4638498320189939
+          },
+          {
+            "date": "2017-08-10",
+            "return": 0.4437445014579371
+          },
+          {
+            "date": "2018-02-05",
+            "return": 1.1559792516603906
+          },
+          {
+            "date": "2018-10-10",
+            "return": 0.439498392415999
+          },
+          {
+            "date": "2020-02-24",
+            "return": 0.46545672122078363
+          },
+          {
+            "date": "2020-02-27",
+            "return": 0.4208998768597427
+          },
+          {
+            "date": "2020-03-12",
+            "return": 0.40018551176604067
+          },
+          {
+            "date": "2020-03-16",
+            "return": 0.4298806817087415
+          },
+          {
+            "date": "2020-06-11",
+            "return": 0.47950675977645907
+          },
+          {
+            "date": "2021-01-27",
+            "return": 0.6164204319953999
+          },
+          {
+            "date": "2021-11-26",
+            "return": 0.540366036423789
+          }
+        ],
+        "flagged_count": 21,
+        "hard_count": 1,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": false
+      },
+      "rows": 8668,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
+    "^VIX3M": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "f17175b0a07b0ec9546b0ea8bdc5df16776aa225b7d4f61343d60d9419ac19c3",
+      "first_date": "2006-07-17",
+      "issues": [
+        {
+          "check": "return_outliers",
+          "detail": "3 daily returns beyond +/-40% (incl. 0 beyond +/-80%)",
+          "severity": "warning"
+        }
+      ],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [
+          {
+            "date": "2007-02-27",
+            "return": 0.4006567355086921
+          },
+          {
+            "date": "2018-02-05",
+            "return": 0.6517908412549525
+          },
+          {
+            "date": "2020-03-16",
+            "return": 0.40136607376855205
+          }
+        ],
+        "flagged_count": 3,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": false
+      },
+      "rows": 4498,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    }
+  },
+  "warning_count": 5
+}
