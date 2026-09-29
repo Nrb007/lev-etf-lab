@@ -30,3 +30,7 @@ Thresholds live in `config/thresholds.yaml`; its sha256 is stored in every verdi
 8. **Hold-out** (`lab holdout`, never run on a rejected hypothesis): same sign of excess return as train and excess Sharpe `>= 0`; only pass/fail and a timestamp are returned.
 
 **Validation and known behavior.** On simulated pure noise the full battery advanced 0 of 200 families (limit 9.6%); the best of 500 random variants of a null signal was rejected in 8 of 8 worlds. Power against a planted edge is modest at short samples (edge Sharpe 2.65: 40% at 1,500 days, 87% at 3,000; edge Sharpe 1.8: 27% and 50%), limited chiefly by the regime and PBO tests. A rejection therefore does not mean "no edge"; it means the edge was not demonstrated to these standards.
+
+## Ledger, pre-registration and hold-out (Milestone 4)
+
+`lab run` refuses a hypothesis unless its spec and signal module are committed, unchanged, and dated before the run, and every earlier trial of that hypothesis recorded the same spec hash. `ledger/trials.jsonl` is append-only, enforced by a test that walks its git history. Each hypothesis can be scored on the hold-out once: the attempt is logged in `ledger/holdout_attempts.jsonl` when the slice is decrypted, a second attempt is refused, and the frozen spec and signal are loaded from the pre-registration commit. Details and trade-offs are in `docs/decisions.md`.
