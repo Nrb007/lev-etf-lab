@@ -26,6 +26,8 @@ from core.data.synthetic import (
 from core.data.validate import DataQualityError, run_validation
 from core.engine.backtest import BacktestError, LeakageError
 from core.engine.signal_api import SignalError
+from core.judge.common import JudgeError
+from core.judge_runner import holdout_hypothesis, judge_hypothesis
 from core.runner import RunError, run_hypothesis
 
 app = typer.Typer(help="lev-etf-lab command line.", no_args_is_help=True)
@@ -52,6 +54,17 @@ def _not_implemented(command: str) -> None:
 def _emit(payload: dict, as_json: bool, summary: str) -> None:
     typer.echo(json.dumps(payload, indent=2, sort_keys=True) if as_json else summary)
 
+
+_JUDGE_ERRORS = (
+    RunError,
+    JudgeError,
+    BacktestError,
+    LeakageError,
+    SignalError,
+    CacheMissError,
+    CacheCorruptError,
+    ValueError,
+)
 
 JsonOption = Annotated[bool, typer.Option("--json", help="Print machine-readable output.")]
 
@@ -163,15 +176,41 @@ def run(
 
 
 @app.command("judge")
-def judge(hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")]) -> None:
-    """Judge a hypothesis on the train split."""
-    _not_implemented("judge")
+def judge(
+    hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
+    as_json: JsonOption = False,
+) -> None:
+    """Run the train-split test battery and verdict on a hypothesis's recorded trials."""
+    try:
+        verdict = judge_hypothesis(hypothesis_id)
+    except _JUDGE_ERRORS as exc:
+        typer.echo(f"lab judge: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    reasons = ", ".join(verdict["reasons"]) or "none"
+    _emit(
+        verdict,
+        as_json,
+        f"{hypothesis_id}: {verdict['train_verdict']} (N = {verdict['n_trials']}; "
+        f"failing: {reasons})",
+    )
 
 
 @app.command("holdout")
-def holdout(hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")]) -> None:
-    """Score a hypothesis once on the hold-out (human-run)."""
-    _not_implemented("holdout")
+def holdout(
+    hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
+    as_json: JsonOption = False,
+) -> None:
+    """Score a hypothesis on the hold-out (human-run). Prints only pass/fail and a timestamp."""
+    try:
+        result = holdout_hypothesis(hypothesis_id)
+    except _JUDGE_ERRORS as exc:
+        typer.echo(f"lab holdout: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    _emit(
+        result,
+        as_json,
+        f"{hypothesis_id}: hold-out {result['holdout_verdict']} at {result['scored_at']}",
+    )
 
 
 @ledger_app.command("summary")

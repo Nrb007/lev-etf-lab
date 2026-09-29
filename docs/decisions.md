@@ -89,3 +89,82 @@ Running log of design decisions (date, options, choice, reason). This fills in a
 
 - The runner needs the fund, underlying and leverage to assemble data, and SPEC Section 1.6 forbids `core/engine` from referencing leverage or a ticker. So `core/runner.py` owns spec loading, data assembly and the ledger writes, while `core/engine` only sees a signal, a features frame, fund returns and a risk-free series.
 - Also fixed a pre-existing flaky M1 test: `test_holdout_roundtrip_uses_disposable_key` asserted the ciphertext did not contain `b"QQQ"`, which base64 output contains by chance now and then; it now checks for the parquet magic `PAR1`.
+
+## 2026-09-29: rework SPEC Section 8 access control (adopted, captain approved)
+
+Status: adopted 2026-09-29 by the captain. Applied in the M3 PR: `.claude/settings.json` (the three blanket denies removed), SPEC.md Section 8 and its CLAUDE.md excerpt, the repo `CLAUDE.md` rule, and `docs/methodology.md`. The `.claude/agents/**` and `.claude/hooks/**` deny is applied right after M5 merges, not now. The settings.json edit was made through Bash because the file's own deny rule blocks the Edit tool; it was the captain-approved change and nothing else in the file changed.
+
+### Problem
+The project-wide `Edit(/config/**)`, `Edit(/core/judge/**)`, `Edit(/ledger/**)` denies also block supervised construction of those directories (M0-M4). A deny at any settings level cannot be overridden by another level (Claude Code permissions docs, "Settings precedence": "If a tool is denied at any level, no other level can allow it"; "An allow rule can't carve an exception out of a deny rule"), so a local `settings.local.json` allow does not help.
+
+### What subagent files can and cannot do (from https://code.claude.com/docs/en/sub-agents, summarized by a fetch model; re-read the page before writing agent files in M5, per SPEC 0 rule 5)
+- Supported frontmatter: `name, description, tools, disallowedTools, model, permissionMode, maxTurns, skills, mcpServers, hooks, memory, background, omitClaudeMd, effort, isolation, color, initialPrompt`.
+- **No** path-level allow/deny rules in a subagent definition. `Edit(path)`-style rules exist only in settings files, and those apply session-wide.
+- What does exist: `tools` / `disallowedTools` (whole-tool allow/deny, so an agent without `Edit`/`Write`/`Bash` cannot write at all), `permissionMode`, and `hooks` (`PreToolUse` with a `matcher`; a command hook that exits 2 blocks the call). A hook receives the tool input as JSON, so a hook script can enforce a path allowlist on `Edit`/`Write` (`tool_input.file_path`).
+- Not verified: whether frontmatter hooks fire when the agent is run as the main thread (`claude --agent <name>`) as opposed to spawned as a subagent. M5 must test this by deliberate violation attempts (its acceptance criterion already requires that).
+
+### 1. New `.claude/settings.json`
+Keep, unconditional and project-wide (no agent ever needs these): `Read(/data/holdout.enc)`, `Read(/results/holdout/**)`, `Edit(/.claude/settings.json)`. Drop `Edit(/config/**)`, `Edit(/core/judge/**)`, `Edit(/ledger/**)`. Confirmed workable: nothing else in the repo depends on those three rules.
+Suggested addition for you to accept or reject: also deny `Edit(/.claude/agents/**)` and `Edit(/.claude/hooks/**)` project-wide. The per-agent scoping below lives in those files; without this an agent could rewrite its own scope. It does not block human or crewmate edits through ordinary PR review any more than the settings.json rule does today, but it would block M5 crewmates who build those files, so it may be better applied only once M5 is merged.
+
+### 2. What stops each M5 subagent from touching `core/judge/**`, `config/**`, `ledger/**`
+Two layers per agent file: (a) a minimal `tools` list, (b) for every agent that has `Edit` or `Write`, a `PreToolUse` hook (matcher `Edit|Write`) running one shared script, `.claude/hooks/path_allow.py <allowed globs>`, that exits 2 for any path outside the agent's list.
+- `hypothesis`: `tools: Read, Grep, Glob, Edit, Write` (no Bash). Hook allows `hypotheses/*.yaml`, `hypotheses/signals/*.py`.
+- `data`: `tools: Read, Grep, Glob, Edit, Write` (no Bash; fetching is human-run as it needs the network and `LAB_HOLDOUT_KEY`). Hook allows `core/data/**`, `data/cache/**`, `results/data_validation.json`. Hold-out access stays out of scope by project-wide deny plus SPEC 9.2.
+- `skeptic`: `tools: Read, Grep, Glob, Write, Bash`. Hook allows only `results/*/review.md`. Its Bash is limited by a second `PreToolUse` hook to `pytest`, `uv run pytest` and the leakage self-test; this is a command-text check, so it is a speed bump, not a wall.
+- `report`: `tools: Read, Grep, Glob, Write` (no Bash). Hook allows `results/*/report.md`.
+Tamper evidence that does not depend on permissions: every verdict stores the sha256 of `config/thresholds.yaml`; `lab run` stores it in each trial; the ledger-append-only test fails on any modified line; the human reviews the git diff before hold-out scoring.
+
+### 3. SPEC Section 8 rewrite (replace the body of Section 8)
+> `.claude/settings.json` denies every agent, project-wide, from reading `data/holdout.enc` and `results/holdout/**` and from editing `.claude/settings.json`. Do not export `LAB_HOLDOUT_KEY` in any agent session.
+>
+> Write access is scoped per agent, not per directory: each subagent file in `.claude/agents/` lists the minimal `tools` it needs and, for agents that can edit files, a `PreToolUse` hook that blocks any write outside that agent's allowed paths (Section 9). Two kinds of actor write in this repo, and the rule differs. (1) Supervised construction and maintenance sessions (a human, or a crewmate working in a task worktree; every milestone M0 onward) DO write `config/**`, `core/**` including `core/judge/**`, `ledger/**` code and `.claude/**`; their changes are reviewed like any other code through the no-mistakes pipeline and the pull request, and no settings rule blocks them. (2) The autonomous research-loop subagents of Section 9 (`hypothesis`, `data`, `skeptic`, `report`) are barred from writing `config/**`, `core/judge/**`, `ledger/**` and `.claude/**`, and may write only the paths listed in their own agent file. The trial ledger's contents (`ledger/trials.jsonl`, `ledger/returns/`) are written only by `lab run`, never by hand. Every verdict and trial records the hash of `config/thresholds.yaml`.
+>
+> Verify the exact permission-rule and subagent-frontmatter syntax against current Claude Code docs.
+>
+> **Known limitation, to be documented in `docs/methodology.md`.** (keep the existing hold-out paragraph unchanged, then add the paragraph in item 4.)
+
+### 4. `docs/methodology.md` known-limitation note (same wording standard as the hold-out note)
+> Per-agent write scoping reduces the chance that an agent edits the judge, the thresholds or the ledger, but it is not an absolute technical wall. Claude Code subagent files cannot declare path-level permission rules, so the scoping is enforced by tool lists and hook scripts. An agent given `Bash` could in principle write files by a route the hook does not recognize, and the main session is not bound by any subagent's scope. Mitigations: agents that write files get no `Bash`; the skeptic's `Bash` is restricted to test commands; the thresholds hash is stored in every verdict and trial; a test fails if any ledger line changes; and the human reviews the git diff of `core/judge/`, `config/` and `ledger/` before any hold-out scoring. The README states this limitation openly.
+
+### Risks and open points
+- Dropping the three denies removes the only mechanical barrier for the current session and for any agent run before M5's hooks exist. Until M5 lands, nothing scoped stops an agent from editing the judge; build M5 before running any autonomous loop.
+- Hook scripts are code that gates security; they need their own tests (deliberate-violation tests in M5).
+- The doc summary above came from a fetch model, not a verbatim read of the page; re-verify field names and hook-in-`--agent` behaviour when M5 starts.
+
+## 2026-09-29: M3 judge conventions (returns, excess, chosen point)
+
+- The judge works on returns in excess of the daily risk-free rate (`verdict.py` subtracts it once). "Excess Sharpe" (tests 6 and 8) is Sharpe(strategy) minus Sharpe(buy-and-hold benchmark), both excess of cash. "Excess return" (test 8) is the CAGR difference; in the regime test (7) it is the sum of daily (strategy - benchmark) returns per regime.
+- The chosen strategy for `lab judge H-XXXX` is the hypothesis's trial with the highest in-sample Sharpe (the spec's `primary_metric`; ties to the earliest trial). DSR, SPA and PBO price in that selection by using every trial in the ledger (N = ledger line count). `lab judge` re-runs the chosen trial to recover its positions and refuses if the result does not match the ledger's stored returns, so the judged series is always the recorded one.
+- SPA and PBO need a rectangular matrix, so they use the trials that have a return on every date of the chosen strategy's window; other trials (other universes or windows) still count in N for the DSR. PBO's "insufficient trials" applies to that comparable count.
+- SPA uses Hansen's "consistent" p-value (`arch`), stationary bootstrap, 1000 replications, block size sqrt(T). These are code constants, not thresholds. The alternative, the "upper" (White reality check) p-value, is more conservative; the consistent one is the SPA the spec names.
+
+## 2026-09-29: M3 permutation test with fewer than 5,000 distinct shifts
+
+- Problem: the spec asks for at least 5,000 circular shifts, but a series of T days has only T - 1 distinct non-zero rotations. Real train windows are about 3,500 (from 2010) to 6,300 (synthetic from 1999) days.
+- Options: (a) fail whenever T - 1 < `min_shifts`, which would fail every 2010-start research universe; (b) resample shifts with replacement up to `min_shifts`, which adds Monte Carlo draws but no information and only looks like more shifts; (c) use all distinct rotations when there are fewer than `min_shifts`, and sample `min_shifts` of them otherwise.
+- Choice: (c). The result records `n_shifts` and `full_enumeration`. With T - 1 < 5000 the p-value is exact for the rotation null and has resolution 1/T.
+
+## 2026-09-29: M3 sensitivity and stress re-evaluations are not ledger trials
+
+- Sensitivity neighbors (one numeric parameter at a time, +/-20% and +/-40%, integers rounded) and the stressed re-runs are diagnostics of the already chosen point. Nothing is selected from them, so they add no selection bias and are not appended to the ledger, although `CLAUDE.md` says backtests go through `lab run`. They still run through `run_backtest` (leakage self-test included). Zero-valued, boolean and non-numeric parameters have no multiplicative neighbor and are skipped; a chosen point with no neighbor at all (no numeric parameter) does not pass test 5, because "nothing to perturb" is not evidence of stability.
+- Financing stress is applied as a return drag of `(L - 1) * spread / 252` per day on the fund (for strategy and benchmark), with `L` from the spec's `universe.leverage`. The judge itself is asset-agnostic: it receives a `stress_fn` callable and never sees a leverage or a ticker.
+
+## 2026-09-29: M3 regime test details
+
+- Regimes: each calendar year, and terciles of the VIX level on the same date (ranked, so ties split evenly). Both partitions must pass both rules; the reported value is the smaller share of positive regimes, and the detail block carries both partitions. A partition whose total excess is not positive fails the "no regime over 50%" rule. If no VIX series is available the test does not pass. The module is `core/judge/regime.py` (Section 3 does not list a file for it).
+- Tercile cut points use the whole train sample. This labels days for analysis only and feeds no signal, so it is not lookahead in the sense the engine guards against.
+
+## 2026-09-29: M3 hold-out scoring path
+
+- `holdout.py` decrypts in-process, calls a caller-supplied `run(frame)` (the frozen signal on the slice) and returns only `{hypothesis_id, holdout_verdict, scored_at}`. Full metrics go to `results/holdout/<id>.json`. Pass means: excess CAGR has the same non-zero sign as the train excess, is at least `min_excess_return`, and excess Sharpe is at least `min_excess_sharpe`.
+- Features for the hold-out come from the slice alone. Splicing train history in front would run rolling windows across the 21-day embargo gap and a price discontinuity. The cost: a signal with a lookback of n days is flat for its first n hold-out days. The first hold-out day has no return (no anchor price, per the M1 decision), so returns start on the second day.
+- `lab holdout` refuses unless a fresh train verdict is `advance` and `LAB_HOLDOUT_KEY` is set. The signal is loaded from the working tree, not from the pre-registration commit, and a second attempt is not refused: both belong to Milestone 4.
+
+## 2026-09-29: M3 judge validation tests (tolerance, power target, what they show)
+
+- Setup: each "strategy" is a family of 56 threshold signals (8 lookbacks x 7 thresholds, above the PBO floor of 50) on a simulated fund; the judge runs on the best in-sample member with N = 56 (500 in the snooping test), exactly as `lab judge` would. Noise worlds have no relation between signal and returns; planted worlds add `beta * z` to the daily return, with `z` a persistent feature the signal reads at the close. Edge size is quoted as the population Sharpe of "long when z > 0" (after costs, excess of cash), estimated on a 200,000-day sample.
+- Noise test tolerance (captain asked me to choose and document): 200 independent worlds, advance rate must be at most 5% + three binomial standard errors = 5% + 4.6% = 9.6%. Three standard errors keeps the chance of a spurious CI failure under about 0.1% if the true rate were exactly 5%. Measured: 0 of 200 advanced. Because a hypothesis needs all seven tests to pass, the combined false-positive rate is far below the 5% each test targets (per-test rejections of noise: DSR 197, SPA 188, regime 187, PBO 156, permutation 126, sensitivity 110, stress 13 out of 200). A tighter cap would be more informative but 0/200 also fits any true rate up to about 1.5%, so more runs would be needed to justify one.
+- Planted-edge target (chosen after a scan; thresholds are locked so the judge is not tuned): power >= 70% for edge Sharpe 2.65 at T = 3000 days. Measured power (30 worlds each): edge 1.82: 27% at T = 1500, 50% at T = 3000; edge 2.65: 40% at T = 1500, 87% at T = 3000. Weak edges (Sharpe about 1, T = 1500) advance almost never. Power is limited mainly by the regime test (a real edge must be positive in at least 60% of years and both partitions must avoid one dominant regime) and by PBO, which penalises a family of near-equivalent variants because the in-sample winner's out-of-sample rank is then close to random. This is a property of the specified thresholds, not a bug: the judge is very conservative on small samples. Quote it when interpreting rejections.
+- Snooping test: 8 worlds, 500 random-parameter variants each (10 features, lookbacks 1-60, thresholds in [-1, 1]); the median best in-sample Sharpe is 1.1 and every one is rejected. The parameter naming the feature is a string so sensitivity does not try to perturb it.
+- The whole file takes about 4-5 minutes. Set `LAB_JUDGE_VALIDATION_OUT=<path>` to write the measured rates and the power table as JSON for the dashboard's judge-validation page.
