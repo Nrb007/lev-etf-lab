@@ -24,6 +24,9 @@ from core.data.synthetic import (
     validate_against_real,
 )
 from core.data.validate import DataQualityError, run_validation
+from core.engine.backtest import BacktestError, LeakageError
+from core.engine.signal_api import SignalError
+from core.runner import RunError, run_hypothesis
 
 app = typer.Typer(help="lev-etf-lab command line.", no_args_is_help=True)
 data_app = typer.Typer(help="Data layer commands.", no_args_is_help=True)
@@ -133,9 +136,30 @@ def data_synth(
 
 
 @app.command("run")
-def run(hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")]) -> None:
-    """Run a pre-registered hypothesis grid."""
-    _not_implemented("run")
+def run(
+    hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
+    as_json: JsonOption = False,
+) -> None:
+    """Backtest a hypothesis's parameter grid on the train split and record every trial."""
+    try:
+        result = run_hypothesis(hypothesis_id)
+    except (
+        RunError,
+        BacktestError,
+        LeakageError,
+        SignalError,
+        CacheMissError,
+        CacheCorruptError,
+        ValueError,
+    ) as exc:
+        typer.echo(f"lab run: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    _emit(
+        result,
+        as_json,
+        f"{hypothesis_id}: {result['n_grid_points']} grid points recorded; "
+        f"N = {result['n_trials_total']}",
+    )
 
 
 @app.command("judge")

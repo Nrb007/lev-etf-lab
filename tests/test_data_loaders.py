@@ -141,7 +141,7 @@ def test_holdout_roundtrip_uses_disposable_key(tmp_path, mini_config):
         holdout_key=key,
     )
     assert result["holdout_written"] is True
-    assert b"QQQ" not in holdout.read_bytes()  # ciphertext, not parquet
+    assert b"PAR1" not in holdout.read_bytes()  # ciphertext, not parquet
 
     frame = decrypt_holdout(holdout, key)
     assert {"QQQ", "TQQQ", "^VIX", "FRED:DFF"} <= set(frame.columns)
