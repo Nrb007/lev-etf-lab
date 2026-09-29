@@ -35,7 +35,7 @@ def test_subcommand_help(cmd):
     assert cmd[-1] in result.output
 
 
-STUBS = [cmd for cmd in COMMANDS if cmd[0] != "data"]
+STUBS = [cmd for cmd in COMMANDS if cmd[0] != "data" and cmd != ["run"]]
 
 
 @pytest.mark.parametrize("cmd", STUBS, ids=" ".join)

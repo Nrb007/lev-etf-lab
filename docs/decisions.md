@@ -60,3 +60,32 @@ Running log of design decisions (date, options, choice, reason). This fills in a
 - `lab data synth` also caches the synthetic series as `SYNTH:<fund>:<L>x` with a sidecar so it is checked by `lab data validate` like any other series.
 - Fetch history is the full available history per series (`period="max"`); observed earliest cached dates: QQQ 1999-03-10, SMH 2000-06-05, SOXX 2001-07-13, TQQQ 2010-02-11, DFF 1954-07-01. Note that yfinance's SOXX history starts in mid-2001, so `synthetic_long` for SOXL cannot include the 2000-02 drawdown; QQQ does.
 - Data-quality thresholds (missing-day share 1%, stale run 5 warn / 20 error, split ratios) are module constants in `core/data/validate.py`; `config/` is human-edited only, so they are not in `lab.yaml`.
+
+## 2026-09-29: M2 timing, turnover and cost accounting
+
+- Options: (a) charge costs on the decision day or on the day the position starts earning; (b) measure turnover on target changes or on drift-adjusted weights (a 0.5 position drifts as the fund moves, so holding it constant really means trading daily).
+- Choice: costs and turnover are booked on the day the new position starts earning (t+1), from a flat book, so the first held day pays for entry. Turnover is the absolute change in the *target* position; intra-position weight drift is ignored. The same rule applies to the strategy and to both benchmarks (buy-and-hold pays one entry cost; the 50/50 mix is treated as a constant target with no rebalancing cost).
+- Reason: keeps the cost model exactly `cost_bps * |delta position|`, which is what the property tests pin down, and makes strategies and benchmarks comparable. Cost: the 50/50 benchmark is slightly flattered (a real daily-rebalanced mix would pay for drift), and a strategy holding fractional positions is too. Positions of 0 or 1, the only ones v1 signals are expected to use, are unaffected.
+
+## 2026-09-29: M2 risk-free, Sharpe/Sortino and other metric conventions
+
+- Choice: the daily risk-free rate is `(1 + DGS3MO/100)^(1/252) - 1`, taken on the day being earned (the loader already forward-fills bond-market holidays and logs each fill). Cash weight `(1 - position)` earns it, so a -1 position earns it on 200% of NAV; nothing in v1 uses shorts. Sharpe and Sortino are computed on returns in excess of that daily rate (Sortino: downside deviation of excess returns about 0, all days in the denominator). CAGR compounds over `n/252` years; kurtosis is excess kurtosis; a ratio whose denominator is zero (up to float noise) is NaN, stored as `null` in the ledger, never infinity. Time in market is the share of days with a non-zero position.
+- Reason: SPEC Section 5.3 names the metrics but not their conventions; these are the standard ones, chosen because the strategy earns cash when flat, so excess-over-cash is the fair Sharpe. A human should confirm before results are quoted.
+
+## 2026-09-29: M2 signal contract details
+
+- NaN handling: leading NaNs (indicator warm-up) are flat (0); a NaN after the signal has started, or any position outside [-1, 1], is an error. Filling silently would hide bugs (consistent with the no-silent-fill rule of Section 4.1).
+- Options: leakage self-test compares the truncated value with the full-history value exactly, or within a tolerance. Choice: `atol = 1e-9`, because pandas rolling windows accumulate in a history-dependent order and differ in the last bits. A real leak moves a position by far more than that; a signal thresholding a rolling statistic that lands within 1e-9 of its threshold could in principle flip, which we accept.
+- The test picks 25 dates with `numpy.random.default_rng(20260929)` (captain's decision: fixed K and seed for reproducible CI), from every features date including warm-up. It runs inside `run_backtest` and cannot be disabled. The trade-off of a fixed seed is that a leak that only shows on other dates could survive; `check_leakage(..., seed=)` accepts another seed for the skeptic to use.
+- The features frame passed to a signal contains `close` (the fund) plus `underlying` and `vix` when cached; the engine itself is agnostic to what the columns mean.
+
+## 2026-09-29: M2 `lab run` before pre-registration exists
+
+- Choice (captain's decision): `lab run H-XXXX` records real trials now (parquet in `ledger/returns/`, one line in `ledger/trials.jsonl`, N = line count). It does not check that the spec is committed, hashed or older than the run; that gate is Milestone 4. It stores `spec_hash` and `thresholds_hash` (sha256 of the file bytes) and `git_commit` so M4 can verify them later. Trial ids are `<H-id>-<N, six digits>`.
+- Spec and signal loading: the spec is read with a minimal, lenient model (`id`, `universe`, `signal_module`, `params`); strict validation of all Section 7.1 fields is M4. A signal module exposes `make_signal(**params) -> Signal`; the grid is the Cartesian product of `params.*.values`. `LAB_HYPOTHESES_DIR` and `LAB_LEDGER_DIR` override the locations (tests use them).
+- Failure behavior: a grid point is recorded only after it backtests cleanly. If a later point fails (for example the leakage test), earlier points stay in the ledger, since they were real trials, and the command exits non-zero. Until M4 the ledger is therefore unprotected against being polluted by hand-run test hypotheses; only `tests/` fixtures with a temporary ledger are used in this milestone, and the committed `ledger/trials.jsonl` stays empty.
+
+## 2026-09-29: M2 runner lives outside `core/engine`
+
+- The runner needs the fund, underlying and leverage to assemble data, and SPEC Section 1.6 forbids `core/engine` from referencing leverage or a ticker. So `core/runner.py` owns spec loading, data assembly and the ledger writes, while `core/engine` only sees a signal, a features frame, fund returns and a risk-free series.
+- Also fixed a pre-existing flaky M1 test: `test_holdout_roundtrip_uses_disposable_key` asserted the ciphertext did not contain `b"QQQ"`, which base64 output contains by chance now and then; it now checks for the parquet magic `PAR1`.
