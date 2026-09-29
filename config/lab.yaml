@@ -1,0 +1,15 @@
+# Universe, dates, costs, hold-out date. Human-edited only (SPEC Sections 4.1, 4.3, 5.3).
+universe:
+  underlyings: [QQQ, SOXX, SMH]        # SMH is a cross-check for SOXX
+  leveraged_3x: [TQQQ, SOXL, TECL]
+  loaded_not_used:                     # loaded, but not used in v1 hypotheses
+    - {ticker: QLD, leverage: 2}
+    - {ticker: SQQQ, leverage: -3}
+    - {ticker: SOXS, leverage: -3}
+  volatility: ["^VIX", "^VIX3M"]       # ^VIX3M if available
+  rates:
+    - {source: FRED, series: DFF}      # effective fed funds rate
+    - {source: FRED, series: DGS3MO}
+holdout_start: 2024-07-01
+embargo_trading_days: 21               # excluded from both train and hold-out
+cost_bps: 5                            # per unit of turnover

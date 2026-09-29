@@ -1,0 +1,26 @@
+# Judge pass/fail thresholds. Human-edited only (SPEC Section 6.1).
+dsr:
+  min_probability: 0.95
+spa:
+  max_p_value: 0.05
+pbo:
+  max_pbo: 0.30
+  cscv_partitions: 16                  # S
+  min_trials: 50                       # configurable floor; below it: "insufficient trials", no pass
+permutation:
+  max_p_value: 0.05
+  min_shifts: 5000
+sensitivity:
+  perturbations: [0.2, 0.4]            # +/- fractions per parameter
+  min_median_neighbor_sharpe_ratio: 0.6
+  min_fraction_neighbors_beating_benchmark: 0.8
+stress:
+  cost_multiplier: 3.0
+  financing_spread_bps: 200
+  min_excess_sharpe: 0.0               # excess Sharpe must be strictly greater
+regime:
+  min_fraction_positive_regimes: 0.6
+  max_single_regime_share: 0.5
+holdout:
+  min_excess_return: 0.0               # same sign as train excess; excess Sharpe >= 0
+  min_excess_sharpe: 0.0

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(/data/holdout.enc)",
+      "Read(/results/holdout/**)",
+      "Edit(/config/**)",
+      "Edit(/core/judge/**)",
+      "Edit(/ledger/**)",
+      "Edit(/.claude/settings.json)"
+    ]
+  }
+}
