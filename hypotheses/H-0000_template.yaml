@@ -1,0 +1,17 @@
+# Copy to hypotheses/H-XXXX_<slug>.yaml, fill in every field, and commit it (together with its
+# signal module) BEFORE running `lab run H-XXXX`. Pass/fail thresholds are not part of the spec:
+# they come from config/thresholds.yaml.
+id: H-0000
+title: Short name of the hypothesis
+mechanism: >
+  Written rationale: why this should predict forward holding-period returns. Must state the
+  economic or structural mechanism. "Backtest looked good" is invalid.
+universe: {fund: TQQQ, underlying: QQQ, research_universe: real}
+signal_module: hypotheses/signals/h0000_template.py
+params:
+  lookback: {values: [10, 20, 40]}
+benchmark: buy_and_hold
+primary_metric: sharpe
+registered_at: 2026-01-01
+notes_on_prior_trials: >
+  Which earlier hypotheses this builds on, and any peeking that already happened ("none" if none).

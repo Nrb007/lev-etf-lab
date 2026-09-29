@@ -1,12 +1,10 @@
 """`lab judge` / `lab holdout` wiring against the recorded mini universe and a temporary ledger."""
 
 import json
-from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
 import pytest
-import yaml
 from cryptography.fernet import Fernet
 from typer.testing import CliRunner
 
@@ -17,26 +15,19 @@ from core.data.splits import encrypt_holdout
 from core.judge.holdout import score_holdout
 from core.judge.verdict import TEST_ORDER, thresholds_hash
 from core.runner import RunError
+from tests.prereg_helpers import init_repo, write_spec
 
 runner = CliRunner()
-SIGNAL_MODULE = Path(__file__).parents[1] / "fixtures" / "hypotheses" / "h9999_ma_signal.py"
 
 
 @pytest.fixture
 def lab_env(pulled, monkeypatch, tmp_path):
     monkeypatch.setenv("LAB_DATA_DIR", str(pulled["tmp_path"]))
     monkeypatch.setenv("LAB_LEDGER_DIR", str(tmp_path / "ledger"))
-    monkeypatch.setenv("LAB_HYPOTHESES_DIR", str(tmp_path / "hypotheses"))
     monkeypatch.setenv("LAB_RESULTS_DIR", str(tmp_path / "results"))
-    spec = {
-        "id": "H-9999",
-        "title": "test-only moving average",
-        "universe": {"fund": "TQQQ", "underlying": "QQQ", "research_universe": "real"},
-        "signal_module": str(SIGNAL_MODULE),
-        "params": {"window": {"values": [5, 10, 20]}},
-    }
-    (tmp_path / "hypotheses").mkdir()
-    (tmp_path / "hypotheses" / "H-9999_test.yaml").write_text(yaml.safe_dump(spec))
+    repo = init_repo(tmp_path / "repo")
+    monkeypatch.setenv("LAB_HYPOTHESES_DIR", str(repo / "hypotheses"))
+    write_spec(repo)
     assert runner.invoke(app, ["run", "H-9999"]).exit_code == 0
     return tmp_path
 
