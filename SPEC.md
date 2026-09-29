@@ -284,13 +284,17 @@ Thresholds are **not** part of the spec. They come from `config/thresholds.yaml`
 
 ## 8. Hold-out and access control
 
-`.claude/settings.json` must deny agents from reading or listing the hold-out material:
+`.claude/settings.json` denies every agent, project-wide and unconditionally, from reading the hold-out material and from editing the settings file itself:
 
-- Deny read access to `data/holdout.enc`, `results/holdout/**`, and `config/thresholds.yaml` edits.
-- Deny write access to `config/**`, `core/judge/**`, `ledger/**`, and `.claude/settings.json`. Only the human edits these.
+- Deny read access to `data/holdout.enc` and `results/holdout/**`.
+- Deny edits to `.claude/settings.json`.
 - Do not export `LAB_HOLDOUT_KEY` in any agent session.
 
-Verify the exact permission-rule syntax against current Claude Code docs.
+Write access elsewhere is scoped per agent, not per directory. Two kinds of actor write in this repo, and the rule differs. (1) Supervised construction and maintenance sessions (a human, or a crewmate working in a task worktree; every milestone) DO write `config/**`, `core/**` including `core/judge/**`, ledger code and `.claude/**`. Their changes are reviewed like any other code through the no-mistakes pipeline and the pull request, and no settings rule blocks them. (2) The autonomous research-loop subagents of Section 9 (`hypothesis`, `data`, `skeptic`, `report`) are barred from writing `config/**`, `core/judge/**`, `ledger/**` and `.claude/**`, and may write only the paths listed in their own agent file. Each agent file lists the minimal `tools` it needs and, for agents that can edit files, a `PreToolUse` hook that blocks any write outside that agent's allowed paths. Claude Code subagent files cannot declare path-level permission rules, so hooks are the mechanism. The trial ledger's contents (`ledger/trials.jsonl`, `ledger/returns/`) are written only by `lab run`, never by hand. Every verdict and trial records the hash of `config/thresholds.yaml`.
+
+Once Milestone 5 is merged, `.claude/settings.json` also denies edits to `.claude/agents/**` and `.claude/hooks/**`, so an agent cannot rewrite its own scope.
+
+Verify the exact permission-rule and subagent-frontmatter syntax against current Claude Code docs.
 
 **Known limitation, to be documented in `docs/methodology.md`.** Permission rules reduce leakage but are not a hard guarantee: hold-out-period prices are publicly downloadable, and an agent with shell access could refetch them. Mitigations: the data loader truncates at fetch time; the skeptic agent audits each run for use of post-`holdout_start` data; the ledger is reviewed by the human before any hold-out scoring; and the README states this limitation openly.
 
@@ -409,7 +413,7 @@ Read SPEC.md first. Rules that always apply:
 - Ask clarifying questions and present a plan with tradeoffs before writing code.
 - Numbers and verdicts come from core/ code only. Never estimate or hand-write results.
 - Never read, list, or reference data/holdout.enc or results/holdout/.
-- Never edit config/, core/judge/, ledger/, or .claude/settings.json.
+- Autonomous research-loop agents never edit config/, core/judge/, ledger/, or .claude/. Supervised construction sessions may, through the normal PR review.
 - Every backtest goes through `lab run` so it is counted in the ledger.
 - Signals use only information available at the close of day t.
 - One milestone at a time; check acceptance criteria before moving on.

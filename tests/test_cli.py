@@ -35,12 +35,12 @@ def test_subcommand_help(cmd):
     assert cmd[-1] in result.output
 
 
-STUBS = [cmd for cmd in COMMANDS if cmd[0] != "data" and cmd != ["run"]]
+STUBS = [cmd for cmd in COMMANDS if cmd[0] not in {"data", "run", "judge", "holdout"}]
 
 
 @pytest.mark.parametrize("cmd", STUBS, ids=" ".join)
 def test_stub_exits_nonzero(cmd):
-    args = [*cmd, "H-0001"] if cmd[0] in {"run", "judge", "holdout", "report"} else cmd
+    args = [*cmd, "H-0001"] if cmd[0] == "report" else cmd
     result = runner.invoke(app, args)
     assert result.exit_code != 0
     assert "not yet implemented" in result.output
