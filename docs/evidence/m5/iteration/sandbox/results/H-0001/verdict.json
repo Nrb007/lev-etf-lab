@@ -1,0 +1,199 @@
+{
+  "chosen_params": {
+    "lookback": 10,
+    "target_vol": 0.6
+  },
+  "chosen_trial": "H-0001-000002",
+  "holdout_verdict": null,
+  "hypothesis_id": "H-0001",
+  "n_obs": 3597,
+  "n_trials": 9,
+  "reasons": [
+    "spa",
+    "pbo",
+    "regime"
+  ],
+  "seed": 20260929,
+  "tests": {
+    "dsr": {
+      "details": {
+        "expected_max_sharpe_per_period": 0.0049295832559048715,
+        "kurtosis": 4.859541012576909,
+        "n_obs": 3597,
+        "n_trials": 9,
+        "sharpe_per_period": 0.0617511384994464,
+        "skew": -0.3747758284154709
+      },
+      "pass": true,
+      "threshold": 0.95,
+      "value": 0.9996139407175451
+    },
+    "pbo": {
+      "details": {
+        "min_trials": 50,
+        "n_comparable_trials": 9,
+        "reason": "insufficient trials",
+        "status": "insufficient_trials"
+      },
+      "pass": false,
+      "threshold": 0.3,
+      "value": null
+    },
+    "permutation": {
+      "details": {
+        "full_enumeration": true,
+        "min_shifts": 5000,
+        "n_shifts": 3596,
+        "null_sharpe_mean": 0.8561541700809259,
+        "null_sharpe_p95": 0.9288176828796622,
+        "observed_sharpe": 0.9802689338678486
+      },
+      "pass": true,
+      "threshold": 0.05,
+      "value": 0.015012510425354461
+    },
+    "regime": {
+      "details": {
+        "max_single_regime_share": null,
+        "max_single_regime_share_threshold": 0.5,
+        "partitions": {
+          "vix_tercile": {
+            "excess_by_regime": {
+              "0": -0.053853695264688056,
+              "1": -0.5303188223159356,
+              "2": -0.11258315436048213
+            },
+            "fraction_positive": 0.0,
+            "max_share": null,
+            "n_regimes": 3,
+            "total_excess": -0.6967556719411059
+          },
+          "year": {
+            "excess_by_regime": {
+              "2010": -0.052507206978786344,
+              "2011": -0.16461187803759575,
+              "2012": -0.008956298630163197,
+              "2013": -0.009733505547451643,
+              "2014": -0.033412918933432394,
+              "2015": -0.07727386348863974,
+              "2016": -0.04724763960709211,
+              "2017": 0.0,
+              "2018": 0.046430149257030276,
+              "2019": -0.12743753771120894,
+              "2020": -0.243005806307078,
+              "2021": -0.08349812266893014,
+              "2022": 0.19783949471332976,
+              "2023": -0.09010016097163896,
+              "2024": -0.0032403770294486484
+            },
+            "fraction_positive": 0.13333333333333333,
+            "max_share": null,
+            "n_regimes": 15,
+            "total_excess": -0.6967556719411059
+          }
+        }
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.0
+    },
+    "sensitivity": {
+      "details": {
+        "base_sharpe": 0.9802689338678486,
+        "benchmark_sharpe": 0.8718717434502367,
+        "fraction_beating_benchmark": 1.0,
+        "fraction_beating_benchmark_threshold": 0.8,
+        "n_neighbors": 8,
+        "neighbors": [
+          {
+            "params": {
+              "lookback": 8,
+              "target_vol": 0.6
+            },
+            "sharpe": 0.9822102529551465
+          },
+          {
+            "params": {
+              "lookback": 12,
+              "target_vol": 0.6
+            },
+            "sharpe": 1.0146700302633056
+          },
+          {
+            "params": {
+              "lookback": 6,
+              "target_vol": 0.6
+            },
+            "sharpe": 0.9514154257305695
+          },
+          {
+            "params": {
+              "lookback": 14,
+              "target_vol": 0.6
+            },
+            "sharpe": 0.9840535844245699
+          },
+          {
+            "params": {
+              "lookback": 10,
+              "target_vol": 0.48
+            },
+            "sharpe": 0.9790837599995632
+          },
+          {
+            "params": {
+              "lookback": 10,
+              "target_vol": 0.72
+            },
+            "sharpe": 0.9509667195288329
+          },
+          {
+            "params": {
+              "lookback": 10,
+              "target_vol": 0.36
+            },
+            "sharpe": 0.9787832621161486
+          },
+          {
+            "params": {
+              "lookback": 10,
+              "target_vol": 0.84
+            },
+            "sharpe": 0.9251455578307434
+          }
+        ],
+        "perturbations": [
+          0.2,
+          0.4
+        ]
+      },
+      "pass": true,
+      "threshold": 0.6,
+      "value": 0.9986376975094747
+    },
+    "spa": {
+      "details": {
+        "block_size": 60,
+        "n_models": 9,
+        "n_obs": 3597,
+        "p_lower": 0.577,
+        "p_upper": 0.96,
+        "reps": 1000
+      },
+      "pass": false,
+      "threshold": 0.05,
+      "value": 0.958
+    },
+    "stress": {
+      "details": {
+        "cost_multiplier": 3.0,
+        "financing_spread_bps": 200.0
+      },
+      "pass": true,
+      "threshold": 0.0,
+      "value": 0.09140340598128893
+    }
+  },
+  "thresholds_hash": "5eb57273eb04086baafb9b24551c4bfb5366ed7a5846259ce2dc9d19aae5bede",
+  "train_verdict": "reject"
+}

@@ -1,0 +1,49 @@
+SANDBOX MODE: /Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/demo/sandbox (real ledger and hypotheses untouched; hold-out is never scored)
+
+== 1/9 hypothesis proposes 2 spec(s)
+[01-hypothesis] hypothesis: exit 0, 35s, 4 files touched, 0 denied
+[{"id": "H-0001", "spec": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/demo/sandbox/hypotheses/H-0001_voltarget_drag.yaml", "signal": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/demo/sandbox/hypotheses/signals/h0001_voltarget_drag.py"}, {"id": "H-0002", "spec": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/demo/sandbox/hypotheses/H-0002_trend_vix_regime.yaml", "signal": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/demo/sandbox/hypotheses/signals/h0002_trend_vix_regime.py"}]
+
+== 2/9 skeptic pre-run review
+[02-skeptic-pre-H-0001] skeptic: exit 0, 31s, 1 files touched, 3 denied
+H-0001: skeptic pre-run recommendation: clear
+[02-skeptic-pre-H-0002] skeptic: exit 0, 32s, 1 files touched, 1 denied
+H-0002: skeptic pre-run recommendation: clear
+
+== 3/9 checkpoint: commit the specs (pre-registration requires a commit before the run)
+?? hypotheses/H-0001_voltarget_drag.yaml
+?? hypotheses/H-0002_trend_vix_regime.yaml
+?? hypotheses/signals/h0001_voltarget_drag.py
+?? hypotheses/signals/h0002_trend_vix_regime.py
+LOOP_AUTO_COMMIT set (sandbox): committing without a prompt
+committed f6a26bc 2026-09-29T21:45:10-05:00
+
+== 4/9 lab run  and  5/9 lab judge
+H-0001: 9 grid points recorded; N = 9
+H-0001: reject (N = 9; failing: spa, pbo, regime)
+H-0001: train verdict: reject
+H-0002: 9 grid points recorded; N = 18
+H-0002: reject (N = 18; failing: spa, pbo, permutation, sensitivity, stress, regime)
+H-0002: train verdict: reject
+
+== 6/9 skeptic post-run review
+[06-skeptic-post-H-0001] skeptic: exit 0, 42s, 1 files touched, 1 denied
+H-0001: skeptic post-run recommendation: block
+[06-skeptic-post-H-0002] skeptic: exit 0, 38s, 1 files touched, 1 denied
+H-0002: skeptic post-run recommendation: block
+
+== 7/9 hold-out (human decision; interactive terminal only)
+No hypothesis advanced; the hold-out is not scored.
+
+== 8/9 report
+[08-report-H-0001] report: exit 0, 37s, 1 files touched, 0 denied
+[08-report-H-0002] report: exit 0, 29s, 1 files touched, 0 denied
+
+== 9/9 lab dashboard build
+lab dashboard build: no dashboard yet (Milestone 6); nothing built
+
+== iteration finished (logs: /Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/logs/loop-20260930T024328Z)
+N = 18 trials across 2 hypotheses (train verdicts: {'reject': 2})
+  H-0001: 9 trials, reject; failing: spa, pbo, regime
+  H-0002: 9 trials, reject; failing: spa, pbo, permutation, sensitivity, stress, regime
+exit=0

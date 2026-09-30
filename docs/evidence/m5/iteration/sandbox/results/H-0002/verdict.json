@@ -1,0 +1,202 @@
+{
+  "chosen_params": {
+    "trend_window": 200,
+    "vix_ratio": 1.5
+  },
+  "chosen_trial": "H-0002-000018",
+  "holdout_verdict": null,
+  "hypothesis_id": "H-0002",
+  "n_obs": 3597,
+  "n_trials": 18,
+  "reasons": [
+    "spa",
+    "pbo",
+    "permutation",
+    "sensitivity",
+    "stress",
+    "regime"
+  ],
+  "seed": 20260929,
+  "tests": {
+    "dsr": {
+      "details": {
+        "expected_max_sharpe_per_period": 0.013383843864897325,
+        "kurtosis": 6.623329084551361,
+        "n_obs": 3597,
+        "n_trials": 18,
+        "sharpe_per_period": 0.05360493650006019,
+        "skew": -0.5480076589546778
+      },
+      "pass": true,
+      "threshold": 0.95,
+      "value": 0.9911685291341095
+    },
+    "pbo": {
+      "details": {
+        "min_trials": 50,
+        "n_comparable_trials": 18,
+        "reason": "insufficient trials",
+        "status": "insufficient_trials"
+      },
+      "pass": false,
+      "threshold": 0.3,
+      "value": null
+    },
+    "permutation": {
+      "details": {
+        "full_enumeration": true,
+        "min_shifts": 5000,
+        "n_shifts": 3596,
+        "null_sharpe_mean": 0.7630185009667135,
+        "null_sharpe_p95": 0.942638865951031,
+        "observed_sharpe": 0.8509519861474102
+      },
+      "pass": false,
+      "threshold": 0.05,
+      "value": 0.1993327773144287
+    },
+    "regime": {
+      "details": {
+        "max_single_regime_share": null,
+        "max_single_regime_share_threshold": 0.5,
+        "partitions": {
+          "vix_tercile": {
+            "excess_by_regime": {
+              "0": -0.2022259843209775,
+              "1": -2.363663968757211,
+              "2": 0.12338955957508035
+            },
+            "fraction_positive": 0.3333333333333333,
+            "max_share": null,
+            "n_regimes": 3,
+            "total_excess": -2.442500393503108
+          },
+          "year": {
+            "excess_by_regime": {
+              "2010": -0.6302573759481315,
+              "2011": -0.4327394387420709,
+              "2012": -0.19165224068133263,
+              "2013": -0.0005000000000000004,
+              "2014": -0.027028352627157193,
+              "2015": -0.25132612275045985,
+              "2016": -0.24454653687247563,
+              "2017": 0.0,
+              "2018": -0.23429645569089136,
+              "2019": -0.46127887031411524,
+              "2020": -0.09083714075501026,
+              "2021": -0.10731913206438704,
+              "2022": 0.5799632175798826,
+              "2023": -0.35068194463695906,
+              "2024": 0.0
+            },
+            "fraction_positive": 0.06666666666666667,
+            "max_share": null,
+            "n_regimes": 15,
+            "total_excess": -2.4425003935031078
+          }
+        }
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.06666666666666667
+    },
+    "sensitivity": {
+      "details": {
+        "base_sharpe": 0.8509519861474102,
+        "benchmark_sharpe": 0.8718717434502367,
+        "fraction_beating_benchmark": 0.125,
+        "fraction_beating_benchmark_threshold": 0.8,
+        "n_neighbors": 8,
+        "neighbors": [
+          {
+            "params": {
+              "trend_window": 160,
+              "vix_ratio": 1.5
+            },
+            "sharpe": 0.9884069380480482
+          },
+          {
+            "params": {
+              "trend_window": 240,
+              "vix_ratio": 1.5
+            },
+            "sharpe": 0.8542887026366678
+          },
+          {
+            "params": {
+              "trend_window": 120,
+              "vix_ratio": 1.5
+            },
+            "sharpe": 0.8606310656000415
+          },
+          {
+            "params": {
+              "trend_window": 280,
+              "vix_ratio": 1.5
+            },
+            "sharpe": 0.7877205776414387
+          },
+          {
+            "params": {
+              "trend_window": 200,
+              "vix_ratio": 1.2000000000000002
+            },
+            "sharpe": 0.7713503950752594
+          },
+          {
+            "params": {
+              "trend_window": 200,
+              "vix_ratio": 1.7999999999999998
+            },
+            "sharpe": 0.8281776535649745
+          },
+          {
+            "params": {
+              "trend_window": 200,
+              "vix_ratio": 0.8999999999999999
+            },
+            "sharpe": 0.8461223256060045
+          },
+          {
+            "params": {
+              "trend_window": 200,
+              "vix_ratio": 2.0999999999999996
+            },
+            "sharpe": 0.84822676166924
+          }
+        ],
+        "perturbations": [
+          0.2,
+          0.4
+        ]
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.9955609216838546
+    },
+    "spa": {
+      "details": {
+        "block_size": 60,
+        "n_models": 18,
+        "n_obs": 3597,
+        "p_lower": 0.577,
+        "p_upper": 0.987,
+        "reps": 1000
+      },
+      "pass": false,
+      "threshold": 0.05,
+      "value": 0.958
+    },
+    "stress": {
+      "details": {
+        "cost_multiplier": 3.0,
+        "financing_spread_bps": 200.0
+      },
+      "pass": false,
+      "threshold": 0.0,
+      "value": -0.046532913285353694
+    }
+  },
+  "thresholds_hash": "5eb57273eb04086baafb9b24551c4bfb5366ed7a5846259ce2dc9d19aae5bede",
+  "train_verdict": "reject"
+}

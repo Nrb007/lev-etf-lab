@@ -1,0 +1,23 @@
+id: H-0002
+title: Trend and implied-vol regime filter for holding the leveraged fund
+mechanism: >
+  Leveraged-fund holding costs are regime dependent. In sustained uptrends with subdued
+  volatility, daily-reset compounding is favourable: realized variance is low, so the
+  L*(L-1)/2*sigma^2 drag is small relative to L*mu, and trending paths let the fund's compounding
+  exceed L times the underlying return. In downtrends and volatility spikes the reverse holds:
+  large moves with reversals make the drag large, and the fund must rebalance by selling into
+  declines, crystallizing losses. Trend (underlying above its trailing mean) and volatility
+  regimes both persist over weeks, and a VIX far above its own trailing average signals
+  elevated forward variance. Holding only when the trend is up and VIX is not spiking avoids
+  the expensive regime. Falls back to the trend condition alone if VIX is not cached.
+universe: {fund: TQQQ, underlying: QQQ, research_universe: real}
+signal_module: hypotheses/signals/h0002_trend_vix_regime.py
+params:
+  trend_window: {values: [50, 100, 200]}
+  vix_ratio: {values: [1.1, 1.25, 1.5]}
+benchmark: buy_and_hold
+primary_metric: sharpe
+registered_at: 2026-09-30
+notes_on_prior_trials: >
+  none. Ledger shows N = 0 trials and no earlier hypotheses. Related in spirit to H-0001 (both
+  target vol regimes) but uses trend and implied vol rather than realized-vol scaling.
