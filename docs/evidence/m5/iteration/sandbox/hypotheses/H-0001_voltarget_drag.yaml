@@ -1,0 +1,20 @@
+id: H-0001
+title: Volatility-targeted exposure to limit leveraged vol drag
+mechanism: >
+  A daily-reset L-times leveraged fund compounds at roughly L*mu - (L*(L-1)/2)*sigma^2 per year
+  relative to the underlying, so the drag grows with the square of realized volatility and is
+  large in high-vol regimes. Realized volatility is strongly persistent (volatility clustering),
+  so trailing volatility is a usable forecast of the next holding period's volatility, and hence
+  of drag. Scaling exposure by target_vol / trailing_vol (capped at 1, remainder in cash) cuts
+  the position exactly when forecast drag is highest and keeps full exposure when it is low.
+  The mechanism predicts a lower-volatility, smaller-drawdown path; it does not assume higher raw return.
+universe: {fund: TQQQ, underlying: QQQ, research_universe: real}
+signal_module: hypotheses/signals/h0001_voltarget_drag.py
+params:
+  lookback: {values: [10, 20, 60]}
+  target_vol: {values: [0.4, 0.6, 0.8]}
+benchmark: buy_and_hold
+primary_metric: sharpe
+registered_at: 2026-09-30
+notes_on_prior_trials: >
+  none. Ledger shows N = 0 trials and no earlier hypotheses; no data was inspected.

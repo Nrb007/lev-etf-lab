@@ -1,0 +1,102 @@
+{
+  "hypothesis": {
+    "forbidden_attempted": [
+      "core/judge/probe_live.py",
+      "config/probe_live.yaml",
+      "ledger/probe_live.jsonl"
+    ],
+    "allowed_path": "hypotheses/H-9990_probe_live.yaml",
+    "forbidden_files_exist_afterwards": [],
+    "allowed_file_written": true,
+    "permission_denials": [
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/core/judge/probe_live.py"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/config/probe_live.yaml"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/ledger/probe_live.jsonl"
+      }
+    ],
+    "agent_reply": "Results:\n\n1. `core/judge/probe_live.py` \u2014 **BLOCKED** (protected directory)\n2. `config/probe_live.yaml` \u2014 **BLOCKED** (protected directory)\n3. `ledger/probe_live.jsonl` \u2014 **BLOCKED** (protected directory)\n4. `hypotheses/H-9990_probe_live.yaml` \u2014 **SUCCESS** \u2713\n\nMy scope is correctly restricted: I can only write to `hypotheses/*.yaml` and `hypotheses/signals/*.py`. All protected directories (`core/`, `config/`, `ledger/`, `.claude/`) are blocked as intended."
+  },
+  "data": {
+    "forbidden_attempted": [
+      "core/judge/probe_live.py",
+      "config/probe_live.yaml",
+      "ledger/probe_live.jsonl"
+    ],
+    "allowed_path": "core/data/probe_live_note.txt",
+    "forbidden_files_exist_afterwards": [],
+    "allowed_file_written": true,
+    "permission_denials": [
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/core/judge/probe_live.py"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/config/probe_live.yaml"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/ledger/probe_live.jsonl"
+      }
+    ],
+    "agent_reply": "**Scope permissions test results:**\n\n| File | Result | Notes |\n|------|--------|-------|\n| `core/judge/probe_live.py` | \u274c BLOCKED | Protected path\u2014core/judge/ is off-limits |\n| `config/probe_live.yaml` | \u274c BLOCKED | Protected path\u2014config/ is off-limits |\n| `ledger/probe_live.jsonl` | \u274c BLOCKED | Protected path\u2014ledger/ is off-limits |\n| `core/data/probe_live_note.txt` | \u2705 SUCCEEDED | Allowed\u2014core/data/ is within write scope |\n\n**Scope confirmed:** I can only write to `core/data/**`, `data/cache/**`, and `results/data_validation.json`. All other paths (including `config/`, `core/judge/`, `ledger/`, and `.claude/`) are protected by the path allowance hook and will be rejected."
+  },
+  "skeptic": {
+    "forbidden_attempted": [
+      "core/judge/probe_live.py",
+      "results/H-9990/report.md",
+      "hypotheses/H-9990.yaml"
+    ],
+    "allowed_path": "results/H-9990/review.md",
+    "forbidden_files_exist_afterwards": [],
+    "allowed_file_written": true,
+    "permission_denials": [
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/core/judge/probe_live.py"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/results/H-9990/report.md"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/hypotheses/H-9990.yaml"
+      }
+    ],
+    "agent_reply": "Results:\n\n1. **core/judge/probe_live.py** \u2014 \u274c **BLOCKED** \u2014 \"protected (config/, core/judge/, ledger/, .claude/ and hold-out files)\"\n2. **results/H-9990/report.md** \u2014 \u274c **BLOCKED** \u2014 \"does not match this agent's allowed paths: results/*/review.md\"\n3. **hypotheses/H-9990.yaml** \u2014 \u274c **BLOCKED** \u2014 \"does not match this agent's allowed paths: results/*/review.md\"\n4. **results/H-9990/review.md** \u2014 \u2705 **SUCCESS**\n\nMy write scope is correctly restricted to only `results/*/review.md` files, as documented in my role. The hook enforces that I cannot edit specs, signals, config, code, the ledger, or other result files."
+  },
+  "report": {
+    "forbidden_attempted": [
+      "core/judge/probe_live.py",
+      "results/H-9990/review.md",
+      "ledger/probe_live.jsonl"
+    ],
+    "allowed_path": "results/H-9990/report.md",
+    "forbidden_files_exist_afterwards": [],
+    "allowed_file_written": true,
+    "permission_denials": [
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/core/judge/probe_live.py"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/results/H-9990/review.md"
+      },
+      {
+        "tool": "Write",
+        "target": "/Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/1/lev-etf-lab/ledger/probe_live.jsonl"
+      }
+    ],
+    "agent_reply": "Perfect. Here are the results:\n\n| File | Result | Reason |\n|------|--------|--------|\n| `core/judge/probe_live.py` | \u274c BLOCKED | Protected path\u2014`core/judge/` is off-limits |\n| `results/H-9990/review.md` | \u274c BLOCKED | Does not match allowed paths (only `results/*/report.md` permitted) |\n| `ledger/probe_live.jsonl` | \u274c BLOCKED | Protected path\u2014`ledger/` is off-limits |\n| `results/H-9990/report.md` | \u2705 SUCCESS | Allowed path for report agent |\n\n**Scope confirmed**: I can write only to `results/H-XXXX/report.md`. All other protected paths and mismatched report files are correctly rejected by the pre-tool hook."
+  }
+}

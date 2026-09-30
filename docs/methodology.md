@@ -34,3 +34,20 @@ Thresholds live in `config/thresholds.yaml`; its sha256 is stored in every verdi
 ## Ledger, pre-registration and hold-out (Milestone 4)
 
 `lab run` refuses a hypothesis unless its spec and signal module are committed, unchanged, and dated before the run, and every earlier trial of that hypothesis recorded the same spec hash. `ledger/trials.jsonl` is append-only, enforced by a test that walks its git history. Each hypothesis can be scored on the hold-out once: the attempt is logged in `ledger/holdout_attempts.jsonl` when the slice is decrypted, a second attempt is refused, and the frozen spec and signal are loaded from the pre-registration commit. Details and trade-offs are in `docs/decisions.md`.
+
+## Agents and the research loop (Milestone 5)
+
+Four subagents (`.claude/agents/`) propose and critique; deterministic code produces every number and verdict.
+
+| Agent | Tools | May write (enforced by `.claude/hooks/path_allow.py`) |
+|---|---|---|
+| `hypothesis` | Read, Grep, Glob, Edit, Write | `hypotheses/*.yaml`, `hypotheses/signals/*.py` |
+| `data` | Read, Grep, Glob, Edit, Write | `core/data/**`, `data/cache/**`, `results/data_validation.json` |
+| `skeptic` | Read, Grep, Glob, Edit, Write, `Bash(uv run pytest ...)`, `Bash(uv run lab leakage ...)` | `results/*/review.md` |
+| `report` | Read, Grep, Glob, Write | `results/*/report.md` |
+
+Every write is checked by a `PreToolUse` hook declared in the agent's own frontmatter. The hook resolves the target path (`..` and symlinks included), requires it to match the agent's globs, and refuses `config/`, `core/judge/`, `ledger/`, `.claude/` and the hold-out files whatever the globs say. The skeptic's `Bash` is limited by a second hook to test commands with no shell control characters. `scripts/loop.sh` runs one iteration (SPEC Section 9.5) and logs each agent invocation (prompt, files touched, duration) to `logs/`. The hold-out step is reachable only for an advanced hypothesis, at an interactive terminal, after typing its id; `LAB_HOLDOUT_KEY` is never given to an agent.
+
+**What the permission tests prove, and what they do not.** `tests/agents/` runs each agent's hook command, taken verbatim from its file, against deliberate violations (writes to the judge, thresholds, ledger, `.claude/`, hold-out files and to another agent's files; `..` and symlink escapes; malformed input), and runs the whole loop with stand-ins for the model. A live probe (`LAB_LIVE_AGENT_TESTS=1`) shows real agents launched with `--agent` refused by the same hooks. They do not prove that no route around the hooks exists: `pytest` run by the skeptic executes arbitrary test code, the hypothesis agent's Python signal modules are run later by `lab run` (so a malicious signal is code that runs with the operator's privileges, and the skeptic's read is the only review before the human commits it), and a hook is a check on tool calls, not a sandbox. The driver's after-the-fact audit of touched files, the ledger append-only test, the thresholds hash in every verdict and the human's review of the git diff are the backstops. Reading is not restricted beyond the two project-wide read denies for the hold-out slice.
+
+**The loop proves the plumbing, not a finding.** The first end-to-end iteration was run against an isolated sandbox (its own ledger, so N in the real ledger is unchanged); see `docs/evidence/m5/`. With a sandbox ledger's handful of trials, PBO reports "insufficient trials" and every hypothesis is rejected by construction.

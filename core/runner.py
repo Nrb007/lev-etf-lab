@@ -24,12 +24,18 @@ from core.config import CONFIG_DIR
 from core.data import cache
 from core.data.splits import load_prices
 from core.data.synthetic import daily_returns, research_prices
-from core.engine.backtest import BacktestResult, ExecutionConfig, daily_risk_free, run_backtest
+from core.engine.backtest import (
+    BacktestResult,
+    ExecutionConfig,
+    check_leakage,
+    daily_risk_free,
+    run_backtest,
+)
 from core.engine.signal_api import Signal
 from core.ledger import ledger, prereg
 from core.ledger.spec import HypothesisSpec, SpecError, parse_spec
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
 RF_SERIES = "DGS3MO"
 
 
@@ -186,4 +192,31 @@ def run_hypothesis(hypothesis_id: str, config: ExecutionConfig | None = None) ->
             {k: t[k] for k in ("trial_id", "n", "params", "metrics", "returns_path")}
             for t in trials
         ],
+    }
+
+
+def check_leakage_for(hypothesis_id: str, seed: int | None = None) -> dict:
+    """Run the engine's leakage self-test on every grid point of a spec (no ledger writes).
+
+    Reads the spec and signal from the working tree, so it works before pre-registration; it is
+    what the skeptic runs in its pre-run review. Raises ``LeakageError`` at the first leak.
+    """
+    spec_path = find_spec(hypothesis_id)
+    spec = load_spec(spec_path)
+    if spec.id != hypothesis_id:
+        raise RunError(f"{spec_path.name} declares id {spec.id}, expected {hypothesis_id}")
+    factory = load_signal_factory(spec)
+    points = grid_points(spec)
+    if not points:
+        raise RunError(f"{hypothesis_id}: empty parameter grid")
+    features, _, _, _ = build_inputs(spec)
+    kwargs = {} if seed is None else {"seed": seed}
+    checked = 0
+    for params in points:
+        checked = len(check_leakage(factory(**params), features, **kwargs))
+    return {
+        "hypothesis_id": hypothesis_id,
+        "grid_points": len(points),
+        "dates_checked_per_point": checked,
+        "passed": True,
     }

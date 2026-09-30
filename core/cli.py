@@ -29,7 +29,8 @@ from core.engine.signal_api import SignalError
 from core.judge.common import JudgeError
 from core.judge_runner import holdout_hypothesis, judge_hypothesis
 from core.ledger.ledger import LedgerError
-from core.runner import RunError, run_hypothesis
+from core.ledger.summary import format_summary, summarize
+from core.runner import RunError, check_leakage_for, run_hypothesis
 
 app = typer.Typer(help="lev-etf-lab command line.", no_args_is_help=True)
 data_app = typer.Typer(help="Data layer commands.", no_args_is_help=True)
@@ -178,6 +179,26 @@ def run(
     )
 
 
+@app.command("leakage")
+def leakage(
+    hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
+    seed: Annotated[int | None, typer.Option("--seed", help="Override the fixed seed.")] = None,
+    as_json: JsonOption = False,
+) -> None:
+    """Run the leakage self-test on a spec's signal (read-only; records no trials)."""
+    try:
+        result = check_leakage_for(hypothesis_id, seed=seed)
+    except _JUDGE_ERRORS as exc:
+        typer.echo(f"lab leakage: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    _emit(
+        result,
+        as_json,
+        f"{hypothesis_id}: no leakage across {result['grid_points']} grid points "
+        f"({result['dates_checked_per_point']} truncation dates each)",
+    )
+
+
 @app.command("judge")
 def judge(
     hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
@@ -217,9 +238,14 @@ def holdout(
 
 
 @ledger_app.command("summary")
-def ledger_summary() -> None:
-    """Summarize the trial ledger."""
-    _not_implemented("ledger summary")
+def ledger_summary(as_json: JsonOption = False) -> None:
+    """Trial count N and train-split verdict state per hypothesis (never hold-out results)."""
+    try:
+        summary = summarize()
+    except (LedgerError, ValueError) as exc:
+        typer.echo(f"lab ledger summary: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    _emit(summary, as_json, format_summary(summary))
 
 
 @app.command("report")
@@ -230,5 +256,5 @@ def report(hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")]) -> N
 
 @dashboard_app.command("build")
 def dashboard_build() -> None:
-    """Build the static dashboard."""
-    _not_implemented("dashboard build")
+    """Build the static dashboard (no-op stub until Milestone 6; exits 0 so the loop completes)."""
+    typer.echo("lab dashboard build: no dashboard yet (Milestone 6); nothing built")

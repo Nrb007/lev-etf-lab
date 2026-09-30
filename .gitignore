@@ -13,3 +13,6 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 .lavish/
+# research-loop artifacts: agent invocation logs and the isolated demo sandbox (SPEC Section 9.5)
+logs/
+demo/
