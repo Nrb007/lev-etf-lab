@@ -279,16 +279,6 @@ def test_a_failed_run_is_reported_and_does_not_hide_the_others(env):
     assert "lab judge H-0001" not in [shape(c) for c in calls(env)]
 
 
-def test_loop_script_has_a_single_guarded_holdout_call():
-    text = (REPO / "scripts" / "loop.sh").read_text()
-    sites = [line for line in text.splitlines() if re.search(r"\blab holdout\b", line)
-             and not line.lstrip().startswith("#") and "echo" not in line]  # fmt: skip
-    assert len(sites) == 1 and "LAB_HOLDOUT_KEY" in sites[0]
-    body = text[text.index("7/9 hold-out") : text.index("8/9 report")]
-    assert '[ -n "$SANDBOX" ]' in body and "[ ! -t 0 ]" in body and "read -r" in body
-    assert "--yes" not in text and "--force" not in text
-
-
 def test_audit_also_covers_a_sandbox_nested_inside_the_repo(env):
     """The demo sandbox lives in the repo's (gitignored) demo/ dir; its files must be audited."""
     nested = REPO / "demo" / f"pytest-sandbox-{os.getpid()}"

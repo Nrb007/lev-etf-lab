@@ -81,6 +81,23 @@ def test_agent_cannot_write_protected_paths(name, path, tool, root):
     assert blocked(result), (name, path, result.stderr)
 
 
+CASE_VARIANTS = [
+    "results/Holdout/report.md",
+    "results/Holdout/review.md",
+    "Ledger/trials.jsonl",
+    "Config/lab.yaml",
+    ".Claude/settings.json",
+    "Core/Judge/x.py",
+]
+
+
+@pytest.mark.parametrize("name", AGENT_NAMES)
+@pytest.mark.parametrize("path", CASE_VARIANTS)
+def test_case_variants_of_protected_paths_are_blocked(name, path, root):
+    result = run_hook(writer_hook(name), write_call(str(root / path)), root)
+    assert blocked(result), (name, path, result.stderr)
+
+
 @pytest.mark.parametrize("name", AGENT_NAMES)
 def test_agent_can_write_its_own_paths(name, root):
     for path in ALLOWED[name]:

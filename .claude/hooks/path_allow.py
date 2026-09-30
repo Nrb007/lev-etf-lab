@@ -17,7 +17,7 @@ import json
 import os
 import re
 import sys
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 # Never writable by a research-loop agent, even if a glob in its own file would match.
 HARD_DENY = (
@@ -55,7 +55,8 @@ def glob_to_regex(pattern: str) -> re.Pattern:
 
 
 def matches(rel: str, patterns) -> bool:
-    return any(glob_to_regex(p).match(rel) for p in patterns)
+    rel = rel.casefold()
+    return any(glob_to_regex(p.casefold()).match(rel) for p in patterns)
 
 
 def agent_root() -> Path:
@@ -73,10 +74,10 @@ def check_path(raw: str, allowed, root: Path, base: Path):
     if not path.is_absolute():
         path = base / path
     resolved = path.resolve()  # follows symlinks and ``..`` so neither can smuggle a path out
-    try:
-        rel = PurePosixPath(resolved.relative_to(root).as_posix()).as_posix()
-    except ValueError:
+    full, base_s = resolved.as_posix().casefold(), root.as_posix().casefold().rstrip("/")
+    if not full.startswith(base_s + "/"):
         return f"{raw} is outside the agent root {root}"
+    rel = full[len(base_s) + 1 :]
     if matches(rel, HARD_DENY):
         return f"{rel} is protected (config/, core/judge/, ledger/, .claude/ and hold-out files)"
     if not matches(rel, allowed):

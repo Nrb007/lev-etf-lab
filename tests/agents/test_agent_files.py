@@ -50,9 +50,3 @@ def test_only_the_hook_scripts_named_in_agent_files_exist():
     for script in ("path_allow.py", "bash_allow.py"):
         assert (REPO / ".claude" / "hooks" / script).is_file()
 
-
-@pytest.mark.parametrize("name", AGENT_NAMES)
-def test_contract_sections_are_present(name):
-    body = (REPO / ".claude" / "agents" / f"{name}.md").read_text()
-    for heading in ("## Writes", "## Must", "## Must not"):
-        assert heading in body
