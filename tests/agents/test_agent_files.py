@@ -49,4 +49,3 @@ def test_skeptic_bash_call_goes_through_the_command_hook():
 def test_only_the_hook_scripts_named_in_agent_files_exist():
     for script in ("path_allow.py", "bash_allow.py"):
         assert (REPO / ".claude" / "hooks" / script).is_file()
-
