@@ -30,6 +30,7 @@ export function Shell() {
           <Route path="/" element={<Overview />} />
           <Route path="/hypotheses" element={<Hypotheses />} />
           <Route path="/hypotheses/:id" element={<HypothesisDetail />} />
+          <Route path="/demo/:id" element={<HypothesisDetail demo />} />
           <Route path="/judge-validation" element={<JudgeValidation />} />
           <Route path="/method" element={<Method />} />
           <Route path="*" element={<p>Page not found.</p>} />

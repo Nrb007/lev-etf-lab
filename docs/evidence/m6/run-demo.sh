@@ -7,6 +7,7 @@
 #   docs/evidence/m6/run-demo.sh            # from the repo root; needs `claude` for the agents
 #
 # The real ledger, real hypotheses and real results are never touched: LAB_*_DIR point into demo/.
+# The finished sandbox export is copied into results/demo/ (the dashboard's separate demo subtree).
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd -P)"
 cd "$REPO"
@@ -71,4 +72,8 @@ Context: this demo runs on a simulated universe (scripts/build_demo_world.py); s
 PROMPT
   agent report "08-report-$id" "$LOG_DIR/prompt-report-$id.txt" --expect-glob 'results/*/report.md'
 done
+uv run lab dashboard export >/dev/null   # sandbox env: writes $SANDBOX/results/index.json and detail files
+rm -rf "$REPO/results/demo"; mkdir -p "$REPO/results/demo"
+cp "$SANDBOX/results/index.json" "$REPO/results/demo/index.json"
+for id in "${CLEARED[@]}"; do cp -R "$SANDBOX/results/$id" "$REPO/results/demo/$id"; done
 echo "demo pipeline finished; logs in $LOG_DIR"

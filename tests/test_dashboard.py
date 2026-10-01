@@ -134,26 +134,87 @@ def test_cli_export_command(lab_env):
     assert json.loads(result.output)["funnel"]["proposed"] == 1
 
 
-def _results(tmp_path):
+def _write_index(directory, ids):
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.json").write_text(json.dumps({"hypotheses": [{"id": i} for i in ids]}))
+    for hid in ids:
+        (directory / hid).mkdir(exist_ok=True)
+        (directory / hid / "detail.json").write_text(json.dumps({"id": hid}))
+        (directory / hid / "verdict.json").write_text("{}")
+        (directory / hid / "review.md").write_text("x")
+
+
+def _results(tmp_path, *, demo=("H-0001", "H-0003")):
     res = tmp_path / "res"
-    (res / "H-0001").mkdir(parents=True)
-    (res / "holdout").mkdir()
+    (res / "holdout").mkdir(parents=True)
     (res / "holdout" / "H-0001.json").write_text("{}")
-    (res / "H-0001" / "detail.json").write_text("{}")
-    (res / "H-0001" / "verdict.json").write_text("{}")
-    (res / "H-0001" / "review.md").write_text("x")
-    (res / "index.json").write_text("{}")
+    _write_index(res, ["H-0001"])
+    if demo:
+        _write_index(res / "demo", list(demo))
     (res / "judge_validation.json").write_text("{}")
     (res / "data_quality.json").write_text("{}")
     return res
 
 
-def test_stage_data_copies_only_the_allow_list(tmp_path):
+def _staged(stage):
+    return sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*") if p.is_file())
+
+
+def test_stage_data_publishes_only_what_the_indexes_list(tmp_path):
     stage = tmp_path / "stage"
     copied = dashboard_build.stage_data(_results(tmp_path), stage)
-    files = sorted(p.relative_to(stage).as_posix() for p in stage.rglob("*") if p.is_file())
-    assert files == ["H-0001/detail.json", "index.json", "judge_validation.json"]
+    files = _staged(stage)
+    assert files == [
+        "H-0001/detail.json",
+        "demo/H-0001/detail.json",
+        "demo/H-0003/detail.json",
+        "demo/index.json",
+        "index.json",
+        "judge_validation.json",
+    ]
     assert sorted(copied) == files
+    assert json.loads((stage / "demo" / "H-0003" / "detail.json").read_text()) == {"id": "H-0003"}
+
+
+def test_stage_data_never_publishes_orphans(tmp_path):
+    res = _results(tmp_path)
+    (res / "H-0042").mkdir()
+    (res / "H-0042" / "detail.json").write_text("{}")
+    (res / "demo" / "H-0042").mkdir()
+    (res / "demo" / "H-0042" / "detail.json").write_text("{}")
+    (res / "demo" / "notes.json").write_text("{}")
+    stage = tmp_path / "stage"
+    dashboard_build.stage_data(res, stage)
+    assert not any("H-0042" in f or "notes" in f for f in _staged(stage))
+
+
+def test_stage_data_without_a_demo_publishes_the_real_results_only(tmp_path):
+    stage = tmp_path / "stage"
+    dashboard_build.stage_data(_results(tmp_path, demo=()), stage)
+    assert _staged(stage) == ["H-0001/detail.json", "index.json", "judge_validation.json"]
+
+
+def test_an_empty_real_index_is_valid(tmp_path):
+    res = _results(tmp_path)
+    _write_index(res, [])
+    stage = tmp_path / "stage"
+    dashboard_build.stage_data(res, stage)
+    assert "index.json" in _staged(stage) and "H-0001/detail.json" not in _staged(stage)
+
+
+@pytest.mark.parametrize("where", [".", "demo"])
+def test_a_listed_id_without_a_detail_file_is_a_build_error(tmp_path, where):
+    res = _results(tmp_path)
+    (res / where / "H-0001" / "detail.json").unlink()
+    with pytest.raises(dashboard_build.BuildError, match="detail.json is missing"):
+        dashboard_build.stage_data(res, tmp_path / "stage")
+
+
+def test_a_listed_id_that_is_not_a_hypothesis_id_is_a_build_error(tmp_path):
+    res = _results(tmp_path)
+    _write_index(res, ["../demo"])
+    with pytest.raises(dashboard_build.BuildError, match="malformed"):
+        dashboard_build.stage_data(res, tmp_path / "stage")
 
 
 def test_stage_data_replaces_stale_files(tmp_path):
@@ -171,11 +232,26 @@ def test_stage_data_needs_an_index(tmp_path):
         dashboard_build.stage_data(res, tmp_path / "stage")
 
 
+def test_export_never_reads_or_writes_the_demo_subtree(lab_env):
+    demo = lab_env / "results" / "demo"
+    _write_index(demo, ["H-9999"])  # same id as the real hypothesis, to prove no collision
+    (demo / "H-9999" / "detail.json").write_text('{"demo": true}')
+    before = {p: p.read_bytes() for p in demo.rglob("*") if p.is_file()}
+    index = dashboard_export.export_all()
+    assert [r["id"] for r in index["hypotheses"]] == ["H-9999"]
+    assert {p: p.read_bytes() for p in demo.rglob("*") if p.is_file()} == before
+    real = json.loads((lab_env / "results" / "H-9999" / "detail.json").read_text())
+    assert real != {"demo": True} and real["id"] == "H-9999"
+
+
 def _dist(tmp_path, *, meta=True, robots=True):
     dist = tmp_path / "dist"
     (dist / "data" / "H-0001").mkdir(parents=True)
+    (dist / "data" / "demo" / "H-0001").mkdir(parents=True)
     (dist / "data" / "index.json").write_text("{}")
     (dist / "data" / "H-0001" / "detail.json").write_text("{}")
+    (dist / "data" / "demo" / "index.json").write_text("{}")
+    (dist / "data" / "demo" / "H-0001" / "detail.json").write_text("{}")
     tag = '<meta name="robots" content="noindex, nofollow">' if meta else ""
     (dist / "index.html").write_text(f"<html><head>{tag}</head></html>")
     if robots:
@@ -194,16 +270,9 @@ def test_check_output_refuses_a_site_without_noindex_or_robots(tmp_path):
         dashboard_build.check_output(_dist(tmp_path / "b", robots=False))
 
 
-def test_check_output_refuses_unexpected_published_data(tmp_path):
+@pytest.mark.parametrize("extra", ["extra.json", "demo/verdict.json", "demo/H-0001/review.md"])
+def test_check_output_refuses_unexpected_published_data(tmp_path, extra):
     dist = _dist(tmp_path)
-    (dist / "data" / "extra.json").write_text("{}")
+    (dist / "data" / extra).write_text("{}")
     with pytest.raises(dashboard_build.BuildError, match="unexpected files"):
         dashboard_build.check_output(dist)
-
-
-def test_the_source_page_is_unlisted():
-    from pathlib import Path
-
-    root = Path(dashboard_build.DASHBOARD_DIR)
-    assert "noindex" in (root / "index.html").read_text()
-    assert "Disallow: /" in (root / "public" / "robots.txt").read_text()

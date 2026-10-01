@@ -101,6 +101,26 @@ export const index: IndexData = {
   ],
 };
 
+export const emptyIndex: IndexData = {
+  schema_version: 1,
+  generated_at: "2026-09-30T12:00:00+00:00",
+  n_trials: 0,
+  funnel: { proposed: 0, passed_skeptic: 0, passed_judge: 0, passed_holdout: 0 },
+  data_source: null,
+  expected_max_sharpe_annual: null,
+  thresholds_hash: [],
+  hypotheses: [],
+};
+
+export const realIndex: IndexData = {
+  ...emptyIndex,
+  n_trials: 7,
+  funnel: { proposed: 1, passed_skeptic: 1, passed_judge: 0, passed_holdout: 0 },
+  hypotheses: [
+    { id: "H-0001", title: "Real idea", train_verdict: "reject", reasons: ["spa"], holdout: null, skeptic_pre: "clear", skeptic_post: null, trials: 7, sharpe: 0.1, benchmark_sharpe: 0.5, cagr: 0.02, max_drawdown: -0.3 },
+  ],
+};
+
 export const validation: JudgeValidation = {
   noise: { n: 200, t: 1500, advance_rate: 0, nominal: 0.05, tolerance: 0.046, rejections_by_test: { dsr: 197, spa: 188 } },
   planted_edge: [

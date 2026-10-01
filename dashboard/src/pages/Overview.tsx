@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useIndex } from "../data";
-import { Load } from "../components/Load";
+import { useDemoIndex, useIndex } from "../data";
+import { Load, LoadDemo } from "../components/Load";
 import { DemoBanner } from "../components/DemoBanner";
 import { num } from "../lib/format";
 import type { IndexData } from "../types";
@@ -12,45 +12,55 @@ const STAGES: { key: keyof IndexData["funnel"]; label: string; note: string }[] 
   { key: "passed_holdout", label: "Passed hold-out", note: "Scored once on untouched data; pass or fail only" },
 ];
 
+function Funnel({ data, id, to }: { data: IndexData; id: string; to: string }) {
+  const top = Math.max(1, data.funnel.proposed);
+  return (
+    <>
+      <ol className="funnel" aria-labelledby={id}>
+        {STAGES.map((s) => (
+          <li key={s.key}>
+            <div className="funnel-label">
+              <strong>{s.label}</strong>
+              <span className="muted small">{s.note}</span>
+            </div>
+            <div className="funnel-bar-wrap">
+              <div
+                className="funnel-bar"
+                style={{ width: `${Math.max(2, (100 * data.funnel[s.key]) / top)}%` }}
+                aria-hidden="true"
+              />
+              <span className="funnel-count">{data.funnel[s.key]}</span>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p>
+        <Link to={to}>See every hypothesis, including the rejected ones</Link>
+      </p>
+    </>
+  );
+}
+
 export function Overview() {
   const index = useIndex();
+  const demo = useDemoIndex();
   return (
-    <Load result={index}>
-      {(data) => {
-        const top = Math.max(1, data.funnel.proposed);
-        return (
+    <>
+      <h1>Overview</h1>
+      <p className="lede">
+        A research system that proposes, critiques and statistically judges hypotheses about when leveraged
+        tech ETFs are cheap or expensive to hold. Agents propose and critique; deterministic code produces
+        every number and every verdict. A run that finds nothing is a valid outcome.
+      </p>
+      <Load result={index}>
+        {(data) => (
           <>
-            <h1>Overview</h1>
-            <DemoBanner index={data} />
-            <p className="lede">
-              A research system that proposes, critiques and statistically judges hypotheses about when leveraged
-              tech ETFs are cheap or expensive to hold. Agents propose and critique; deterministic code produces
-              every number and every verdict. A run that finds nothing is a valid outcome.
-            </p>
-
             <section aria-labelledby="funnel">
               <h2 id="funnel">Funnel</h2>
-              <ol className="funnel">
-                {STAGES.map((s) => (
-                  <li key={s.key}>
-                    <div className="funnel-label">
-                      <strong>{s.label}</strong>
-                      <span className="muted small">{s.note}</span>
-                    </div>
-                    <div className="funnel-bar-wrap">
-                      <div
-                        className="funnel-bar"
-                        style={{ width: `${Math.max(2, (100 * data.funnel[s.key]) / top)}%` }}
-                        aria-hidden="true"
-                      />
-                      <span className="funnel-count">{data.funnel[s.key]}</span>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              <p>
-                <Link to="/hypotheses">See every hypothesis, including the rejected ones</Link>
-              </p>
+              {data.funnel.proposed === 0 && (
+                <p className="callout">No real research has been run yet. Zeros here are the true state.</p>
+              )}
+              <Funnel data={data} id="funnel" to="/hypotheses" />
             </section>
 
             <section aria-labelledby="trials">
@@ -78,8 +88,29 @@ export function Overview() {
               </p>
             </section>
           </>
-        );
-      }}
-    </Load>
+        )}
+      </Load>
+
+      <LoadDemo result={demo}>
+        {(data) => (
+          <section aria-labelledby="demo-funnel">
+            <h2 id="demo-funnel">Demo run (simulated data)</h2>
+            <DemoBanner />
+            <Funnel data={data} id="demo-funnel" to="/hypotheses" />
+            <p>
+              Demo trials: <span className="big-number">N = {data.n_trials}</span>
+              {data.expected_max_sharpe_annual != null && (
+                <>
+                  {" "}
+                  (the demo's deflated-Sharpe test expects about {num(data.expected_max_sharpe_annual)} annualised
+                  from luck alone)
+                </>
+              )}
+              . These are not counted in the real N above.
+            </p>
+          </section>
+        )}
+      </LoadDemo>
+    </>
   );
 }

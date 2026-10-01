@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
-import { useDetail } from "../data";
+import { useDemoDetail, useDetail, type Loaded } from "../data";
 import { Load } from "../components/Load";
+import { DemoBanner } from "../components/DemoBanner";
 import { HoldoutBadge, VerdictBadge } from "../components/Badges";
 import { DrawdownChart, EquityChart, RegimeChart } from "../components/Charts";
 import { Heatmap } from "../components/Heatmap";
@@ -203,13 +204,25 @@ function Body({ detail }: { detail: Detail }) {
   );
 }
 
-export function HypothesisDetail() {
-  const { id = "" } = useParams();
-  const detail = useDetail(id);
+function Page({ result, demo }: { result: Loaded<Detail>; demo: boolean }) {
   return (
     <>
       <p><Link to="/hypotheses">&larr; All hypotheses</Link></p>
-      <Load result={detail}>{(d) => <Body detail={d} />}</Load>
+      {demo && <DemoBanner />}
+      <Load result={result}>{(d) => <Body detail={d} />}</Load>
     </>
   );
+}
+
+function RealDetail({ id }: { id: string }) {
+  return <Page result={useDetail(id)} demo={false} />;
+}
+
+function DemoDetail({ id }: { id: string }) {
+  return <Page result={useDemoDetail(id)} demo />;
+}
+
+export function HypothesisDetail({ demo = false }: { demo?: boolean }) {
+  const { id = "" } = useParams();
+  return demo ? <DemoDetail id={id} /> : <RealDetail id={id} />;
 }

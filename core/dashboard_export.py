@@ -161,7 +161,11 @@ def _hypothesis_ids() -> list[str]:
 
 
 def export_index(ids: list[str] | None = None) -> dict:
-    """Write ``results/index.json``: rows, funnel and N for every hypothesis in the ledger."""
+    """Write ``results/index.json``: rows, funnel and N for every hypothesis in the ledger.
+
+    Only ``results/<id>/`` for ledger ids is read or written; ``results/demo/`` (the committed
+    simulated demo) is never touched.
+    """
     ids = ids if ids is not None else _hypothesis_ids()
     rows = []
     detail: dict = {}

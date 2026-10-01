@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useIndex } from "../data";
-import { Load } from "../components/Load";
-import { DemoBanner } from "../components/DemoBanner";
+import { useDemoIndex, useIndex } from "../data";
+import { Load, LoadDemo } from "../components/Load";
+import { DemoBadge, DemoBanner } from "../components/DemoBanner";
 import { FailingTests, HoldoutBadge, VerdictBadge } from "../components/Badges";
 import { num, pct } from "../lib/format";
 import { sortRows, type SortKey, type SortState } from "../lib/sort";
@@ -21,7 +21,7 @@ const COLUMNS: { key: SortKey; label: string; numeric?: boolean }[] = [
   { key: "holdout", label: "Hold-out" },
 ];
 
-export function HypothesesTable({ rows }: { rows: IndexRow[] }) {
+export function HypothesesTable({ rows, demo = false }: { rows: IndexRow[]; demo?: boolean }) {
   const [sort, setSort] = useState<SortState>({ key: "id", dir: "asc" });
   const sorted = useMemo(() => sortRows(rows, sort), [rows, sort]);
   const toggle = (key: SortKey) =>
@@ -48,7 +48,10 @@ export function HypothesesTable({ rows }: { rows: IndexRow[] }) {
         <tbody>
           {sorted.map((r) => (
             <tr key={r.id} className={`row-${r.train_verdict}`}>
-              <td><Link to={`/hypotheses/${r.id}`}>{r.id}</Link></td>
+              <td>
+                {demo && <DemoBadge />}
+                <Link to={`${demo ? "/demo" : "/hypotheses"}/${r.id}`}>{r.id}</Link>
+              </td>
               <td>{r.title}</td>
               <td><VerdictBadge verdict={r.train_verdict} /></td>
               <td><FailingTests reasons={r.reasons} /></td>
@@ -68,23 +71,36 @@ export function HypothesesTable({ rows }: { rows: IndexRow[] }) {
 
 export function Hypotheses() {
   const index = useIndex();
+  const demo = useDemoIndex();
   return (
-    <Load result={index}>
-      {(data) => (
-        <>
-          <h1>Hypotheses</h1>
-          <DemoBanner index={data} />
-          <p className="lede">
-            Every hypothesis that was run, advanced or rejected. Rejections are results: they are what the judge is
-            for, and they count toward N. Click a column to sort; click an ID for the full test battery.
-          </p>
-          <HypothesesTable rows={data.hypotheses} />
-          <p className="muted small">
-            Sharpe and drawdown columns are the chosen (best in-sample) grid point on the train split, after costs.
-            Hold-out results show only pass or fail and the date scored, never metrics.
-          </p>
-        </>
-      )}
-    </Load>
+    <>
+      <h1>Hypotheses</h1>
+      <p className="lede">
+        Every hypothesis that was run, advanced or rejected. Rejections are results: they are what the judge is
+        for, and they count toward N. Click a column to sort; click an ID for the full test battery.
+      </p>
+      <Load result={index}>
+        {(data) =>
+          data.hypotheses.length === 0 ? (
+            <p className="callout">No real hypotheses have been run yet.</p>
+          ) : (
+            <HypothesesTable rows={data.hypotheses} />
+          )
+        }
+      </Load>
+      <p className="muted small">
+        Sharpe and drawdown columns are the chosen (best in-sample) grid point on the train split, after costs.
+        Hold-out results show only pass or fail and the date scored, never metrics.
+      </p>
+      <LoadDemo result={demo}>
+        {(data) => (
+          <section aria-labelledby="demo-hypotheses">
+            <h2 id="demo-hypotheses">Demo run (simulated data)</h2>
+            <DemoBanner />
+            <HypothesesTable rows={data.hypotheses} demo />
+          </section>
+        )}
+      </LoadDemo>
+    </>
   );
 }

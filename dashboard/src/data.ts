@@ -31,3 +31,5 @@ export function useJson<T>(path: string): Loaded<T> {
 export const useIndex = () => useJson<IndexData>("index.json");
 export const useJudgeValidation = () => useJson<JudgeValidation>("judge_validation.json");
 export const useDetail = (id: string) => useJson<Detail>(`${id}/detail.json`);
+export const useDemoIndex = () => useJson<IndexData>("demo/index.json");
+export const useDemoDetail = (id: string) => useJson<Detail>(`demo/${id}/detail.json`);
