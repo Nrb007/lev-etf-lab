@@ -1,0 +1,50 @@
+name: dashboard-pages
+
+# Builds the static dashboard from the committed results/ and, once Pages is enabled, deploys it.
+# The build always runs (so a broken dashboard fails CI). The deploy job only runs when the repo
+# variable PAGES_ENABLED is "true", which the maintainer sets when switching Pages on
+# (Settings > Pages > Source: GitHub Actions). The site is unlisted and noindexed, not access-controlled.
+on:
+  push:
+    branches: [main]
+    paths: [dashboard/**, results/**, core/dashboard_*.py, .github/workflows/pages.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.12
+      - run: uv sync --locked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: uv run lab dashboard build --skip-export
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/dist
+
+  deploy:
+    needs: build
+    if: vars.PAGES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

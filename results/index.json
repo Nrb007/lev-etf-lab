@@ -1,0 +1,94 @@
+{
+ "data_source": {
+  "simulated": true,
+  "source": "simulated-demo-world"
+ },
+ "expected_max_sharpe_annual": 3.83723559124214,
+ "funnel": {
+  "passed_holdout": 0,
+  "passed_judge": 1,
+  "passed_skeptic": 4,
+  "proposed": 4
+ },
+ "generated_at": "2026-09-30T23:41:26+00:00",
+ "hypotheses": [
+  {
+   "benchmark_sharpe": 1.2217156268941283,
+   "cagr": 5.250539142139049,
+   "holdout": null,
+   "id": "H-0001",
+   "max_drawdown": -0.3393780285603707,
+   "reasons": [],
+   "sharpe": 4.68677385858861,
+   "skeptic_post": "block",
+   "skeptic_pre": "clear",
+   "title": "Underlying momentum filter (demo)",
+   "train_verdict": "advance",
+   "trials": 56
+  },
+  {
+   "benchmark_sharpe": 1.2217156268941283,
+   "cagr": 0.8151970735218541,
+   "holdout": null,
+   "id": "H-0002",
+   "max_drawdown": -0.997439116743951,
+   "reasons": [
+    "dsr",
+    "permutation",
+    "sensitivity",
+    "regime"
+   ],
+   "sharpe": 1.3696326172330495,
+   "skeptic_post": "block",
+   "skeptic_pre": "clear",
+   "title": "Hold while implied volatility is calm (demo)",
+   "train_verdict": "reject",
+   "trials": 56
+  },
+  {
+   "benchmark_sharpe": 1.2217156268941283,
+   "cagr": 0.622230762501224,
+   "holdout": null,
+   "id": "H-0003",
+   "max_drawdown": -0.9946921825422724,
+   "reasons": [
+    "dsr",
+    "permutation",
+    "sensitivity",
+    "stress",
+    "regime"
+   ],
+   "sharpe": 1.1321397585692416,
+   "skeptic_post": "block",
+   "skeptic_pre": "clear",
+   "title": "Calendar-window holding (demo)",
+   "train_verdict": "reject",
+   "trials": 56
+  },
+  {
+   "benchmark_sharpe": 1.2217156268941283,
+   "cagr": 0.6077123338441719,
+   "holdout": null,
+   "id": "H-0004",
+   "max_drawdown": -0.989649098384366,
+   "reasons": [
+    "dsr",
+    "permutation",
+    "sensitivity",
+    "stress",
+    "regime"
+   ],
+   "sharpe": 1.1452879176506308,
+   "skeptic_post": "block",
+   "skeptic_pre": "clear",
+   "title": "Buy the fear - hold when implied volatility is high (demo)",
+   "train_verdict": "reject",
+   "trials": 56
+  }
+ ],
+ "n_trials": 224,
+ "schema_version": 1,
+ "thresholds_hash": [
+  "5eb57273eb04086baafb9b24551c4bfb5366ed7a5846259ce2dc9d19aae5bede"
+ ]
+}

@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# staged copy of results/ for the build (core/dashboard_build.py); never committed
+public/data/

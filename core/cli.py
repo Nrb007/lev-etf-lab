@@ -12,6 +12,9 @@ from typing import Annotated
 import typer
 
 from core.config import load_lab_config, load_thresholds
+from core.dashboard_build import BuildError
+from core.dashboard_build import build as build_dashboard
+from core.dashboard_export import export_all
 from core.data import cache
 from core.data.cache import CacheCorruptError, CacheMissError
 from core.data.loaders import FetchError, pull
@@ -254,7 +257,37 @@ def report(hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")]) -> N
     _not_implemented("report")
 
 
+@dashboard_app.command("export")
+def dashboard_export_cmd(as_json: JsonOption = False) -> None:
+    """Write results/<id>/detail.json and results/index.json from the ledger and verdicts."""
+    try:
+        index = export_all()
+    except _JUDGE_ERRORS as exc:
+        typer.echo(f"lab dashboard export: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    f = index["funnel"]
+    _emit(
+        index,
+        as_json,
+        f"exported {f['proposed']} hypotheses (N = {index['n_trials']}): "
+        f"{f['passed_judge']} advanced, {f['proposed'] - f['passed_judge']} rejected",
+    )
+
+
 @dashboard_app.command("build")
-def dashboard_build() -> None:
-    """Build the static dashboard (no-op stub until Milestone 6; exits 0 so the loop completes)."""
-    typer.echo("lab dashboard build: no dashboard yet (Milestone 6); nothing built")
+def dashboard_build_cmd(
+    skip_export: Annotated[
+        bool,
+        typer.Option(
+            "--skip-export", help="Use the committed results/*.json instead of re-exporting."
+        ),
+    ] = False,
+    as_json: JsonOption = False,
+) -> None:
+    """Export, then build the static dashboard into dashboard/dist/ (needs Node.js)."""
+    try:
+        result = build_dashboard(skip_export=skip_export)
+    except (BuildError, *_JUDGE_ERRORS) as exc:
+        typer.echo(f"lab dashboard build: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    _emit(result, as_json, f"built {result['output_dir']} ({len(result['published'])} data files)")

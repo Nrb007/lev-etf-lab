@@ -1,0 +1,26 @@
+wrote 3598 simulated sessions (2010-02-11 to 2024-05-29) for 5 series to /Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/2/lev-etf-lab/demo/data/cache
+[02-skeptic-pre-H-0001] skeptic: exit 0, 26s, 1 files touched, 1 denied
+H-0001: skeptic pre-run recommendation: clear
+[02-skeptic-pre-H-0002] skeptic: exit 0, 36s, 1 files touched, 1 denied
+H-0002: skeptic pre-run recommendation: clear
+[02-skeptic-pre-H-0003] skeptic: exit 0, 52s, 1 files touched, 2 denied
+H-0003: skeptic pre-run recommendation: clear
+[02-skeptic-pre-H-0004] skeptic: exit 0, 29s, 1 files touched, 1 denied
+H-0004: skeptic pre-run recommendation: clear
+H-0001: 56 grid points recorded; N = 56
+H-0002: 56 grid points recorded; N = 112
+H-0003: 56 grid points recorded; N = 168
+H-0004: 56 grid points recorded; N = 224
+H-0001: advance (N = 224; failing: none)
+H-0002: reject (N = 224; failing: dsr, permutation, sensitivity, regime)
+H-0003: reject (N = 224; failing: dsr, permutation, sensitivity, stress, regime)
+H-0004: reject (N = 224; failing: dsr, permutation, sensitivity, stress, regime)
+[06-skeptic-post-H-0001] skeptic: exit 0, 38s, 1 files touched, 2 denied
+[06-skeptic-post-H-0002] skeptic: exit 0, 37s, 1 files touched, 2 denied
+[06-skeptic-post-H-0003] skeptic: exit 0, 39s, 1 files touched, 2 denied
+[06-skeptic-post-H-0004] skeptic: exit 0, 36s, 1 files touched, 2 denied
+[08-report-H-0001] report: exit 0, 30s, 1 files touched, 0 denied
+[08-report-H-0002] report: exit 0, 33s, 1 files touched, 0 denied
+[08-report-H-0003] report: exit 0, 29s, 1 files touched, 0 denied
+[08-report-H-0004] report: exit 0, 32s, 1 files touched, 0 denied
+demo pipeline finished; logs in /Users/nbyrappagari/.treehouse/lev-etf-lab-017d87/2/lev-etf-lab/logs/demo-20260930T233051Z

@@ -39,6 +39,7 @@ packages = ["core", "hypotheses"]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["docs/evidence"]  # verbatim copies of demo sandbox files
 target-version = "py312"
 
 [tool.ruff.lint]

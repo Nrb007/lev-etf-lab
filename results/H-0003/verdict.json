@@ -1,0 +1,175 @@
+{
+  "chosen_params": {
+    "length": 24,
+    "start_day": 1
+  },
+  "chosen_trial": "H-0003-000119",
+  "holdout_verdict": null,
+  "hypothesis_id": "H-0003",
+  "n_obs": 3597,
+  "n_trials": 224,
+  "reasons": [
+    "dsr",
+    "permutation",
+    "sensitivity",
+    "stress",
+    "regime"
+  ],
+  "seed": 20260929,
+  "tests": {
+    "dsr": {
+      "details": {
+        "expected_max_sharpe_per_period": 0.24172312134268095,
+        "kurtosis": 3.850644790985012,
+        "n_obs": 3597,
+        "n_trials": 224,
+        "sharpe_per_period": 0.07131888491959905,
+        "skew": 0.10093255998449421
+      },
+      "pass": false,
+      "threshold": 0.95,
+      "value": 6.776858593325345e-25
+    },
+    "pbo": {
+      "details": {
+        "mean_logit": 3.975728489981367,
+        "median_logit": 3.7841896339182597,
+        "min_trials": 50,
+        "n_comparable_trials": 224,
+        "n_splits": 12870,
+        "partitions": 16
+      },
+      "pass": true,
+      "threshold": 0.3,
+      "value": 0.0
+    },
+    "permutation": {
+      "details": {
+        "full_enumeration": true,
+        "min_shifts": 5000,
+        "n_shifts": 3596,
+        "null_sharpe_mean": 1.0648305729108676,
+        "null_sharpe_p95": 1.2123348825368414,
+        "observed_sharpe": 1.1321521996781632
+      },
+      "pass": false,
+      "threshold": 0.05,
+      "value": 0.23519599666388658
+    },
+    "regime": {
+      "details": {
+        "max_single_regime_share": null,
+        "max_single_regime_share_threshold": 0.5,
+        "partitions": {
+          "vix_tercile": {
+            "excess_by_regime": {
+              "0": -0.68631309287592,
+              "1": -0.9218591525336371,
+              "2": -0.22625076075841238
+            },
+            "fraction_positive": 0.0,
+            "max_share": null,
+            "n_regimes": 3,
+            "total_excess": -1.8344230061679696
+          },
+          "year": {
+            "excess_by_regime": {
+              "2010": -0.07524132398706312,
+              "2011": -1.0126113055654025,
+              "2012": 0.47261914650768055,
+              "2013": 0.4522243745749045,
+              "2014": 0.13529422941014047,
+              "2015": -0.01283178420658404,
+              "2016": -0.02601362889905423,
+              "2017": 0.46088217387421104,
+              "2018": -0.21818282392145405,
+              "2019": -0.9814644863609102,
+              "2020": -0.9558626731177697,
+              "2021": 0.0181310436600699,
+              "2022": 0.04265621692585064,
+              "2023": -0.3953713117285036,
+              "2024": 0.2613491466659148
+            },
+            "fraction_positive": 0.4666666666666667,
+            "max_share": null,
+            "n_regimes": 15,
+            "total_excess": -1.8344230061679696
+          }
+        }
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.0
+    },
+    "sensitivity": {
+      "details": {
+        "base_sharpe": 1.1321521996781632,
+        "benchmark_sharpe": 1.2217177075266203,
+        "fraction_beating_benchmark": 0.0,
+        "fraction_beating_benchmark_threshold": 0.8,
+        "n_neighbors": 4,
+        "neighbors": [
+          {
+            "params": {
+              "length": 19,
+              "start_day": 1
+            },
+            "sharpe": 0.9597577788509686
+          },
+          {
+            "params": {
+              "length": 29,
+              "start_day": 1
+            },
+            "sharpe": 1.1525861675012192
+          },
+          {
+            "params": {
+              "length": 14,
+              "start_day": 1
+            },
+            "sharpe": 0.7494871291554492
+          },
+          {
+            "params": {
+              "length": 34,
+              "start_day": 1
+            },
+            "sharpe": 1.2217177075266203
+          }
+        ],
+        "perturbations": [
+          0.2,
+          0.4
+        ]
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.9328886818188684
+    },
+    "spa": {
+      "details": {
+        "block_size": 60,
+        "n_models": 224,
+        "n_obs": 3597,
+        "p_lower": 0.002,
+        "p_upper": 0.02,
+        "reps": 1000
+      },
+      "pass": true,
+      "threshold": 0.05,
+      "value": 0.02
+    },
+    "stress": {
+      "details": {
+        "cost_multiplier": 3.0,
+        "financing_spread_bps": 200.0
+      },
+      "pass": false,
+      "threshold": 0.0,
+      "value": -0.12575789722739183
+    }
+  },
+  "thresholds_hash": "5eb57273eb04086baafb9b24551c4bfb5366ed7a5846259ce2dc9d19aae5bede",
+  "train_verdict": "reject"
+}
