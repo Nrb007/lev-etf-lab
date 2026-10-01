@@ -1,0 +1,19 @@
+id: H-0004
+title: "Buy the fear - hold when implied volatility is high (demo)"
+mechanism: >
+  Contrarian premium: when implied volatility is high, investors pay for protection and expected
+  returns on risk assets are compensated for bearing it, so hold the fund only while the smoothed
+  VIX is above a level. In the simulated demo universe the VIX is independent of returns, so this
+  hypothesis is expected to fail.
+universe: {fund: TQQQ, underlying: QQQ, research_universe: real}
+signal_module: hypotheses/signals/h0004_fear_buyer.py
+params:
+  window: {values: [1, 2, 3, 5, 8, 13, 21, 34]}
+  vix_min: {values: [16, 18, 20, 22, 24, 26, 28]}
+benchmark: buy_and_hold
+primary_metric: sharpe
+registered_at: 2026-09-30
+notes_on_prior_trials: >
+  DEMO ONLY: this spec runs on the simulated demo universe (scripts/build_demo_world.py), not on
+  market data, to populate the dashboard. Builds on H-0002's VIX feature with the opposite sign;
+  no results had been looked at before writing this spec.

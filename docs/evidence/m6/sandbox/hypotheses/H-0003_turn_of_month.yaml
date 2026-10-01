@@ -1,0 +1,18 @@
+id: H-0003
+title: Calendar-window holding (demo)
+mechanism: >
+  Flow seasonality: payroll, pension and fund inflows are concentrated around month boundaries and
+  could push leveraged-fund prices up in a fixed calendar window. Hold the fund only while the
+  calendar day of the month is inside a window, else sit in cash. In the simulated demo universe
+  returns have no calendar structure, so this is a pure-noise hypothesis expected to fail.
+universe: {fund: TQQQ, underlying: QQQ, research_universe: real}
+signal_module: hypotheses/signals/h0003_turn_of_month.py
+params:
+  start_day: {values: [1, 4, 8, 12, 16, 20, 24, 28]}
+  length: {values: [3, 5, 8, 12, 16, 20, 24]}
+benchmark: buy_and_hold
+primary_metric: sharpe
+registered_at: 2026-09-30
+notes_on_prior_trials: >
+  DEMO ONLY: this spec runs on the simulated demo universe (scripts/build_demo_world.py), not on
+  market data, to populate the dashboard. None: independent of H-0001 and H-0002.

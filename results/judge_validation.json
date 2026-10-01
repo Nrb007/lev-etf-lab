@@ -1,0 +1,73 @@
+{
+  "noise": {
+    "advance_rate": 0.0,
+    "n": 200,
+    "nominal": 0.05,
+    "rejections_by_test": {
+      "dsr": 197,
+      "pbo": 156,
+      "permutation": 126,
+      "regime": 187,
+      "sensitivity": 110,
+      "spa": 188,
+      "stress": 13
+    },
+    "t": 1500,
+    "tolerance": 0.04623310502226732
+  },
+  "planted_edge": [
+    {
+      "beta": 0.2,
+      "edge_sharpe": 1.82,
+      "power": 0.26666666666666666,
+      "rejections_by_test": {
+        "dsr": 3,
+        "pbo": 10,
+        "regime": 18,
+        "spa": 3
+      },
+      "runs": 30,
+      "t": 1500
+    },
+    {
+      "beta": 0.2,
+      "edge_sharpe": 1.82,
+      "power": 0.5,
+      "rejections_by_test": {
+        "dsr": 1,
+        "pbo": 8,
+        "regime": 10
+      },
+      "runs": 30,
+      "t": 3000
+    },
+    {
+      "beta": 0.3,
+      "edge_sharpe": 2.65,
+      "power": 0.4,
+      "rejections_by_test": {
+        "pbo": 3,
+        "regime": 15
+      },
+      "runs": 30,
+      "t": 1500
+    },
+    {
+      "beta": 0.3,
+      "edge_sharpe": 2.65,
+      "power": 0.8666666666666667,
+      "rejections_by_test": {
+        "pbo": 2,
+        "regime": 2
+      },
+      "runs": 30,
+      "t": 3000
+    }
+  ],
+  "snooping": {
+    "advance_rate": 0.0,
+    "median_best_in_sample_sharpe": 1.1073971316290767,
+    "variants": 500,
+    "worlds": 8
+  }
+}

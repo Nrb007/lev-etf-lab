@@ -1,0 +1,15 @@
+{
+ "data_source": null,
+ "expected_max_sharpe_annual": null,
+ "funnel": {
+  "passed_holdout": 0,
+  "passed_judge": 0,
+  "passed_skeptic": 0,
+  "proposed": 0
+ },
+ "generated_at": "2026-10-01T01:39:35+00:00",
+ "hypotheses": [],
+ "n_trials": 0,
+ "schema_version": 1,
+ "thresholds_hash": []
+}

@@ -1,0 +1,203 @@
+{
+  "chosen_params": {
+    "vix_min": 16,
+    "window": 21
+  },
+  "chosen_trial": "H-0004-000211",
+  "holdout_verdict": null,
+  "hypothesis_id": "H-0004",
+  "n_obs": 3597,
+  "n_trials": 224,
+  "reasons": [
+    "dsr",
+    "permutation",
+    "sensitivity",
+    "stress",
+    "regime"
+  ],
+  "seed": 20260929,
+  "tests": {
+    "dsr": {
+      "details": {
+        "expected_max_sharpe_per_period": 0.24172312134268095,
+        "kurtosis": 4.364165453546922,
+        "n_obs": 3597,
+        "n_trials": 224,
+        "sharpe_per_period": 0.0721458613490858,
+        "skew": 0.1344206062044895
+      },
+      "pass": false,
+      "threshold": 0.95,
+      "value": 1.0315418619772112e-24
+    },
+    "pbo": {
+      "details": {
+        "mean_logit": 3.975728489981367,
+        "median_logit": 3.7841896339182597,
+        "min_trials": 50,
+        "n_comparable_trials": 224,
+        "n_splits": 12870,
+        "partitions": 16
+      },
+      "pass": true,
+      "threshold": 0.3,
+      "value": 0.0
+    },
+    "permutation": {
+      "details": {
+        "full_enumeration": true,
+        "min_shifts": 5000,
+        "n_shifts": 3596,
+        "null_sharpe_mean": 1.0218744880963027,
+        "null_sharpe_p95": 1.7965350115283985,
+        "observed_sharpe": 1.1452800435133674
+      },
+      "pass": false,
+      "threshold": 0.05,
+      "value": 0.3363914373088685
+    },
+    "regime": {
+      "details": {
+        "max_single_regime_share": null,
+        "max_single_regime_share_threshold": 0.5,
+        "partitions": {
+          "vix_tercile": {
+            "excess_by_regime": {
+              "0": -1.439973286123797,
+              "1": -0.644423761153035,
+              "2": -0.08488521730415305
+            },
+            "fraction_positive": 0.0,
+            "max_share": null,
+            "n_regimes": 3,
+            "total_excess": -2.1692822645809855
+          },
+          "year": {
+            "excess_by_regime": {
+              "2010": -0.5902361483278615,
+              "2011": -2.1230445631298096,
+              "2012": 0.8115250556595657,
+              "2013": 0.2633264720777078,
+              "2014": 0.21420844816184903,
+              "2015": 0.6857806668192079,
+              "2016": 0.6521358716650647,
+              "2017": 0.650425418000892,
+              "2018": -1.1158276559620264,
+              "2019": -1.2600445713284718,
+              "2020": -0.45713707661019953,
+              "2021": -0.48005415748308017,
+              "2022": 1.2822728368538605,
+              "2023": -0.7211880014446701,
+              "2024": 0.01857514046698644
+            },
+            "fraction_positive": 0.5333333333333333,
+            "max_share": null,
+            "n_regimes": 15,
+            "total_excess": -2.1692822645809855
+          }
+        }
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.0
+    },
+    "sensitivity": {
+      "details": {
+        "base_sharpe": 1.1452800435133674,
+        "benchmark_sharpe": 1.2217177075266203,
+        "fraction_beating_benchmark": 0.0,
+        "fraction_beating_benchmark_threshold": 0.8,
+        "n_neighbors": 8,
+        "neighbors": [
+          {
+            "params": {
+              "vix_min": 13,
+              "window": 21
+            },
+            "sharpe": 1.1406335008020096
+          },
+          {
+            "params": {
+              "vix_min": 19,
+              "window": 21
+            },
+            "sharpe": 0.3654907592555465
+          },
+          {
+            "params": {
+              "vix_min": 10,
+              "window": 21
+            },
+            "sharpe": 1.201161413082983
+          },
+          {
+            "params": {
+              "vix_min": 22,
+              "window": 21
+            },
+            "sharpe": 0.43913809918710167
+          },
+          {
+            "params": {
+              "vix_min": 16,
+              "window": 17
+            },
+            "sharpe": 1.1303518467136278
+          },
+          {
+            "params": {
+              "vix_min": 16,
+              "window": 25
+            },
+            "sharpe": 1.1101796529580914
+          },
+          {
+            "params": {
+              "vix_min": 16,
+              "window": 13
+            },
+            "sharpe": 1.1265497789182548
+          },
+          {
+            "params": {
+              "vix_min": 16,
+              "window": 29
+            },
+            "sharpe": 1.0646430305589043
+          }
+        ],
+        "perturbations": [
+          0.2,
+          0.4
+        ]
+      },
+      "pass": false,
+      "threshold": 0.6,
+      "value": 0.9764989115739532
+    },
+    "spa": {
+      "details": {
+        "block_size": 60,
+        "n_models": 224,
+        "n_obs": 3597,
+        "p_lower": 0.002,
+        "p_upper": 0.02,
+        "reps": 1000
+      },
+      "pass": true,
+      "threshold": 0.05,
+      "value": 0.02
+    },
+    "stress": {
+      "details": {
+        "cost_multiplier": 3.0,
+        "financing_spread_bps": 200.0
+      },
+      "pass": false,
+      "threshold": 0.0,
+      "value": -0.07250486893009267
+    }
+  },
+  "thresholds_hash": "5eb57273eb04086baafb9b24551c4bfb5366ed7a5846259ce2dc9d19aae5bede",
+  "train_verdict": "reject"
+}

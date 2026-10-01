@@ -1,0 +1,19 @@
+id: H-0001
+title: Underlying momentum filter (demo)
+mechanism: >
+  Trend persistence in the underlying: a positive trailing return on the underlying tends to be
+  followed by a positive return as slow-moving flows and rebalancing keep pushing in the same
+  direction. Hold the fund while the trailing return exceeds a hurdle. In the simulated demo
+  universe this autocorrelation is planted by construction, throughout the sample, so this is the
+  hypothesis expected to survive.
+universe: {fund: TQQQ, underlying: QQQ, research_universe: real}
+signal_module: hypotheses/signals/h0001_momentum.py
+params:
+  window: {values: [1, 2, 3, 5, 8, 13, 21, 34]}
+  hurdle: {values: [-0.03, -0.02, -0.01, 0.0, 0.01, 0.02, 0.03]}
+benchmark: buy_and_hold
+primary_metric: sharpe
+registered_at: 2026-09-30
+notes_on_prior_trials: >
+  DEMO ONLY: this spec runs on the simulated demo universe (scripts/build_demo_world.py), not on
+  market data, to populate the dashboard. None: first hypothesis in the demo ledger.

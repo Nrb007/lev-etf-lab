@@ -1,0 +1,28 @@
+## Pre-run review - H-0001 - 2026-09-30T23:30:51Z
+
+Findings:
+- hypotheses/signals/h0001_momentum.py lines 13-16: the signal uses only `pct_change(window)` on the underlying, a trailing window with no `shift(-k)`, no whole-series statistics and no centered windows. The output is NaN where the trailing return is undefined, so warm-up rows are not filled. No lookahead found by reading. The execution lag is the engine's job, not the signal's, and is not visible in this module.
+- `uv run lab leakage H-0001` reported "no leakage across 56 grid points (25 truncation dates each)". This supports the read above.
+- H-0001_momentum.yaml lines 11-13: the grid is 8 windows x 7 hurdles = 56 points, and every point raises N in the multiple-testing count. The spec gives no reason for this size. The windows (1, 2, 3, 5, 8, 13, 21, 34) are Fibonacci-like and have no mechanism behind them. A 1-2 day window at a hurdle near 0 will flip often. At 5 bps per unit of turnover (config/lab.yaml line 15) that costs far more than a slow-flow mechanism justifies. Expect high turnover at the short-window corner, and check it post-run.
+- H-0001_momentum.yaml lines 3-8: the mechanism is a generic trend-persistence story. It also says the autocorrelation is "planted by construction" and that this is "the hypothesis expected to survive". That is circular. A pass on the simulated universe says nothing about real markets. Do not carry a demo pass over to real data or to hold-out consideration.
+- H-0001_momentum.yaml line 9: `research_universe: real` contradicts lines 17-19, which say this runs on the simulated demo universe. Confirm that the run reads the demo data and not real train data. I could not verify this from the spec alone. If the run uses real data, the planted-effect rationale does not apply.
+- H-0001_momentum.yaml line 18: notes_on_prior_trials says this is the first hypothesis in the demo ledger and that nothing was peeked at. There are no signs of post-hoc universe or period selection. TQQQ/QQQ is in the config universe.
+- No reference to hold-out data or files in the spec or signal. config/lab.yaml holdout_start is 2024-07-01, and nothing in the spec touches dates on or after it.
+- Near-duplicate check: I could not list hypotheses/ with my allowed tools. I found no sign of earlier specs, and the notes say this is the first. Not verified by listing.
+
+Recommendation (pre-run): clear
+
+## Post-run review - H-0001 - 2026-09-30T23:30:51Z
+
+Findings:
+- results/H-0001/verdict.json tests.sensitivity.details.base_sharpe and tests.permutation.details.observed_sharpe are both 4.69 for the chosen trial H-0001-000042, against a buy-and-hold benchmark_sharpe of 1.22. A Sharpe near 4.7 on a daily 3x fund over 14 years is not plausible for a real strategy. The spec (lines 6-8) says the autocorrelation is planted in the simulated universe, so the number reflects the simulator, not a market. The pass shows the pipeline can detect a planted effect. It says nothing about real markets and must not count as evidence for hold-out consideration.
+- Data-source inconsistency: every H-0001 trial I read in ledger/trials.jsonl (lines 1-3) records `universe.research_universe: "real"`, while the spec notes say the run uses the simulated demo world. I could not confirm which data was read. If the run read real train data, a Sharpe of 4.7 would point to a serious leak or engine bug. Needs human confirmation.
+- Trial count: verdict.json n_trials = 224, but the spec grid is 8 x 7 = 56 points. 224 = 4 x 56, so the grid seems to have been run about 4 times. The ledger is too large for me to read in full and my Bash cannot grep it, so I did not verify this. The extra trials are conservative for DSR. The reason for the repeated runs should still be explained, and someone should check whether the repeats differ in params or settings.
+- Chosen point on the grid edge: chosen_params hurdle = 0.03 is the largest value in the spec grid (yaml line 13), and window 13 is mid-grid. The sensitivity neighbours (hurdles 0.018 to 0.042, windows 8 to 18) all lie between 4.43 and 4.62, so the surface is flat and not peaked. That is reassuring. It also means the choice among points is nearly arbitrary, which is what a planted effect would produce. The 0.042 neighbour lies outside the registered grid.
+- Extreme drawdown and time in market: the first trials in the ledger (lines 1-3) show max_drawdown of about -0.97 to -1.0 and time_in_market of 0.81 to 0.99. The short-window corner is nearly always invested, with 71 to 961 units of turnover, and total_cost reaches 0.48 at window 1. I did not see the chosen trial's drawdown or turnover. Check them before trusting the result.
+- PBO = 0.0 over 12,870 splits, mean_logit 3.98, and DSR = 0.99986. These values are extreme, consistent with an effect that is planted and stable. They do not show the tests have power on real data.
+- Regime test: fraction_positive by year is 0.8 (2011, 2019 and 2020 negative), above the 0.6 threshold. The largest single-year share is 0.21. All three VIX terciles are positive (max_share 0.385, threshold 0.5). No single regime carries the result. Negative 2019 and 2020 is odd in a world with planted persistence throughout the sample and is worth a look.
+- Stress test passes with a large margin (value 3.46 at 3x costs and 200 bps financing). Permutation p = 0.0039 uses full enumeration of 3,596 shifts. SPA p = 0.02 is the tightest pass (threshold 0.05) but is not marginal.
+- The verdict (train_verdict "advance", holdout_verdict null, empty reasons) is consistent with the test values shown. I did not recompute anything.
+
+Recommendation (post-run): block
