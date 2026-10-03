@@ -82,6 +82,20 @@ class Holdout(_Strict):
     min_excess_sharpe: float
 
 
+class DoseResponse(_Strict):
+    """Criteria for the optional dose-response check (SPEC Section 15).
+
+    Unlike the eight required tests this block is optional in ``thresholds.yaml``: leaving it out
+    uses these defaults, so the file (and the hash recorded with every verdict) is unchanged.
+    """
+
+    expected_exponent: float = Field(default=2.0, gt=0)
+    exponent_tolerance: float = Field(default=0.5, gt=0)
+    min_r2: float = Field(default=0.8, ge=0, le=1)
+    min_sign_agreement: float = Field(default=0.8, gt=0, le=1)
+    min_points: int = Field(default=4, ge=3)
+
+
 class Thresholds(_Strict):
     dsr: Dsr
     spa: Spa
@@ -91,6 +105,7 @@ class Thresholds(_Strict):
     stress: Stress
     regime: Regime
     holdout: Holdout
+    dose_response: DoseResponse = Field(default_factory=DoseResponse)
 
 
 def _load(path: Path) -> dict:

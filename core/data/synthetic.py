@@ -37,6 +37,10 @@ FUND_UNDERLYING = {
     "SOXS": "SOXX",
 }
 
+# Leverage factors cached for every configured underlying by `lab data variants` (SPEC Section 15;
+# 3 is included because the dose-response check needs it next to 1, 2, -1, -2 and -3).
+LEVERAGE_FACTORS = (1, 2, 3, -1, -2, -3)
+
 ResearchUniverse = Literal["real", "synthetic_long"]
 
 
@@ -105,17 +109,15 @@ def research_prices(
     if research_universe != "synthetic_long":
         raise ValueError(f"unknown research_universe {research_universe!r}")
     underlying = underlying or underlying_for(fund)
-    dff_name = cache.fred_name("DFF")
-    frame = load_prices([underlying, dff_name], "train", cache_dir=cache_dir, config=config)
-    under = frame[underlying].dropna()
-    returns = synthetic_returns(
-        daily_returns(under),
-        frame[dff_name],
+    prices = synthetic_fund_prices(
+        underlying,
         leverage,
         financing_spread=financing_spread,
         expense_ratio=expense_ratio,
+        cache_dir=cache_dir,
+        config=config,
     )
-    return synthetic_prices(returns).rename(fund), {
+    return prices.rename(fund), {
         "research_universe": "synthetic_long",
         "fund": fund,
         "underlying": underlying,
@@ -123,6 +125,33 @@ def research_prices(
         "financing_spread": financing_spread,
         "expense_ratio": expense_ratio,
     }
+
+
+def synthetic_fund_prices(
+    underlying: str,
+    leverage: float,
+    *,
+    financing_spread: float = DEFAULT_FINANCING_SPREAD,
+    expense_ratio: float = DEFAULT_EXPENSE_RATIO,
+    cache_dir: Path | None = None,
+    config: LabConfig | None = None,
+) -> pd.Series:
+    """Synthetic ``leverage``-x fund prices from the underlying's full train history."""
+    dff_name = cache.fred_name("DFF")
+    frame = load_prices([underlying, dff_name], "train", cache_dir=cache_dir, config=config)
+    returns = synthetic_returns(
+        daily_returns(frame[underlying].dropna()),
+        frame[dff_name],
+        leverage,
+        financing_spread=financing_spread,
+        expense_ratio=expense_ratio,
+    )
+    return synthetic_prices(returns)
+
+
+def variant_key(underlying: str, leverage: float) -> str:
+    """Cache name of a synthetic variant of an underlying, e.g. ``SYNTH:QQQ:-2x``."""
+    return f"SYNTH:{underlying}:{leverage:g}x"
 
 
 def _jsonable(value):
