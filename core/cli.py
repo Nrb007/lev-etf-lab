@@ -27,6 +27,8 @@ from core.data.synthetic import (
     validate_against_real,
 )
 from core.data.validate import DataQualityError, run_validation
+from core.data.variants import build_variants
+from core.dose_response_runner import METRICS, dose_response_hypothesis
 from core.engine.backtest import BacktestError, LeakageError
 from core.engine.signal_api import SignalError
 from core.judge.common import JudgeError
@@ -154,6 +156,26 @@ def data_synth(
     _emit(payload, as_json, summary)
 
 
+@data_app.command("variants")
+def data_variants(as_json: JsonOption = False) -> None:
+    """Cache synthetic leverage/inverse variants of each underlying; check against real funds."""
+    try:
+        result = build_variants()
+    except (ValueError, CacheMissError, CacheCorruptError) as exc:
+        typer.echo(f"lab data variants: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    lines = [f"cached {len(result['variants'])} synthetic variants"]
+    for v in result["validations"]:
+        if "skipped" in v:
+            lines.append(f"  {v['fund']} {v['leverage']:g}x: skipped ({v['skipped']})")
+        else:
+            lines.append(
+                f"  {v['fund']} {v['leverage']:g}x vs synthetic {v['underlying']}: correlation "
+                f"{v['daily_return_correlation']:.5f} (target met: {v['correlation_target_met']})"
+            )
+    _emit(result, as_json, "\n".join(lines))
+
+
 @app.command("run")
 def run(
     hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
@@ -219,6 +241,32 @@ def judge(
         as_json,
         f"{hypothesis_id}: {verdict['train_verdict']} (N = {verdict['n_trials']}; "
         f"failing: {reasons})",
+    )
+
+
+@app.command("dose-response")
+def dose_response(
+    hypothesis_id: Annotated[str, typer.Argument(metavar="H-XXXX")],
+    metric: Annotated[
+        str, typer.Option("--metric", help=f"Effect per leverage: {' or '.join(METRICS)}.")
+    ] = "excess_return",
+    as_json: JsonOption = False,
+) -> None:
+    """Optional vol-drag check: does the chosen signal's effect scale with L^2 and flip for -L?
+
+    Not part of `lab judge`. Re-runs the chosen point on synthetic 1x/2x/3x/-1x/-2x/-3x funds
+    (diagnostics, not ledger trials) and writes results/<id>/dose_response.json.
+    """
+    try:
+        result = dose_response_hypothesis(hypothesis_id, metric)
+    except _JUDGE_ERRORS as exc:
+        typer.echo(f"lab dose-response: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    effects = ", ".join(f"{d}x: {v:+.4f}" for d, v in result["effects"].items())
+    _emit(
+        result,
+        as_json,
+        f"{hypothesis_id}: {result['flag']} ({result['metric']}: {effects})",
     )
 
 
