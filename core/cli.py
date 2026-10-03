@@ -84,13 +84,44 @@ def data_pull(
 ) -> None:
     """Fetch and cache market data (live network; human-run)."""
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stderr)
+    from theories.cef.data import fetch_fund_series
+
     try:
-        result = pull(refresh=refresh, holdout_key=os.environ.get("LAB_HOLDOUT_KEY"))
+        result = pull(
+            refresh=refresh,
+            fetch_fund=fetch_fund_series,
+            holdout_key=os.environ.get("LAB_HOLDOUT_KEY"),
+        )
     except FetchError as exc:
         typer.echo(f"lab data pull: {exc}", err=True)
         raise typer.Exit(code=1) from exc
     counts = Counter(result["series"].values())
     _emit(result, as_json, f"pulled: {dict(counts)}; holdout_written={result['holdout_written']}")
+
+
+@data_app.command("cef")
+def data_cef(
+    ticker: Annotated[
+        list[str] | None, typer.Option("--ticker", help="Closed-end fund ticker (repeatable).")
+    ] = None,
+    refresh: Annotated[bool, typer.Option("--refresh", help="Re-fetch cached data.")] = False,
+    check: Annotated[
+        bool, typer.Option("--check", help="Also compare NAV with CEFConnect's (live network).")
+    ] = False,
+    as_json: JsonOption = False,
+) -> None:
+    """Fetch and cache closed-end fund price and NAV (theories/cef; live network; human-run)."""
+    from theories.cef.data import compare_with_cefconnect, pull_cef
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s", stream=sys.stderr)
+    try:
+        result = pull_cef(ticker or None, refresh=refresh)
+        if check:
+            result["cefconnect_check"] = [compare_with_cefconnect(t) for t in result["series"]]
+    except Exception as exc:
+        typer.echo(f"lab data cef: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    _emit(result, as_json, f"cef pulled: {result['series']}")
 
 
 @data_app.command("validate")

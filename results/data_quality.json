@@ -1,9 +1,44 @@
 {
-  "generated_at": "2026-10-03T19:16:36+00:00",
+  "generated_at": "2026-10-03T19:38:48+00:00",
   "hard_error_count": 0,
   "hard_errors": [],
   "passed": true,
   "series": {
+    "ADX": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "6d3a5d816d1a102b0f324cc17c297621f923344861d6b9bf0e5f6b6becb43e06",
+      "first_date": "1999-05-14",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 6301,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
+    },
     "FRED:DFF": {
       "alignment": {
         "dropped_non_session": 7938,
@@ -37,6 +72,88 @@
         "dates": []
       },
       "rows": 10775
+    },
+    "NAV:ADX": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "6a6eb8f0536a02cc92a4273fe321a164c396b94b9c0959d707566896e40f67c7",
+      "first_date": "1999-05-14",
+      "issues": [
+        {
+          "check": "stale_prices",
+          "detail": "1 runs of >= 5 identical prices",
+          "severity": "warning"
+        }
+      ],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 6301,
+      "stale_prices": {
+        "longest": 5,
+        "min_run": 5,
+        "runs": [
+          {
+            "end": "2021-09-30",
+            "length": 5,
+            "start": "2021-09-24"
+          }
+        ]
+      },
+      "suspected_splits": []
+    },
+    "PX:ADX": {
+      "alignment": {
+        "dropped_non_session": 0,
+        "forward_fill": 0,
+        "missing": 0
+      },
+      "content_hash": "b5ea57d89f1f712eac1bc8f3db78baef81da0bd56cc0ef46f125cd7c240687ab",
+      "first_date": "1999-05-14",
+      "issues": [],
+      "kind": "price",
+      "last_date": "2024-05-29",
+      "missing_days": {
+        "count": 0,
+        "dates": []
+      },
+      "non_positive_prices": {
+        "count": 0,
+        "dates": []
+      },
+      "return_outliers": {
+        "flag_threshold": 0.4,
+        "flagged": [],
+        "flagged_count": 0,
+        "hard_count": 0,
+        "hard_threshold": 0.8,
+        "hard_threshold_enforced": true
+      },
+      "rows": 6301,
+      "stale_prices": {
+        "longest": 0,
+        "min_run": 5,
+        "runs": []
+      },
+      "suspected_splits": []
     },
     "QLD": {
       "alignment": {
@@ -1379,5 +1496,5 @@
       "suspected_splits": []
     }
   },
-  "warning_count": 13
+  "warning_count": 14
 }

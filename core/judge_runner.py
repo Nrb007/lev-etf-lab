@@ -175,6 +175,10 @@ def _holdout_run(ctx: Context):
         for column, name in {"underlying": uni.underlying, "vix": "^VIX"}.items():
             if name and name in frame:
                 features[column] = frame[name].reindex(features.index)
+        for column, name in uni.features.items():
+            if name not in frame:
+                raise RunError(f"{ctx.spec.id}: the hold-out file has no series {name!r}")
+            features[column] = frame[name].reindex(features.index)
         rf_col = cache.fred_name(RF_SERIES)
         rf = daily_risk_free(frame[rf_col]).reindex(rets.index)
         if rf.isna().any():
