@@ -30,6 +30,10 @@ class Universe(_Strict):
     underlying: str | None = None
     research_universe: Literal["real", "synthetic_long"]
     leverage: float = 3
+    # Extra feature columns: {column name: cache series name}, read from the train cache. This is
+    # how a theory package hands its own series (e.g. a fund's NAV) to a signal, so that the
+    # engine's leakage check sees them too.
+    features: dict[str, str] = Field(default_factory=dict)
 
 
 class HypothesisSpec(_Strict):

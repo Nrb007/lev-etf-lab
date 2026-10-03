@@ -11,6 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from core.data.loaders import fetch_fred, fetch_yfinance
+from theories.cef.data import fetch_yfinance_both, fetch_yfinance_nav
+from theories.cef.funds import FUNDS
 
 OUT = Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 START, END = "2018-06-01", "2019-12-31"
@@ -26,6 +28,11 @@ def main() -> None:
     for name in RATES:
         series = fetch_fred(name).loc[START:END]
         series.to_csv(OUT / f"FRED_{name}.csv", header=["value"])
+    for ticker, fund in FUNDS.items():  # closed-end fund price (both bases) and NAV
+        fetch_yfinance_both(ticker).loc[START:END].to_csv(OUT / f"CEF_{ticker}.csv")
+        fetch_yfinance_nav(fund.nav_symbol).loc[START:END].to_csv(
+            OUT / f"CEF_{fund.nav_symbol}.csv", header=["value"]
+        )
 
 
 if __name__ == "__main__":

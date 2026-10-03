@@ -109,7 +109,8 @@ def grid_points(spec: HypothesisSpec) -> list[dict]:
 def build_inputs(spec: HypothesisSpec) -> tuple[pd.DataFrame, pd.Series, pd.Series, dict]:
     """(features, fund returns, daily risk-free, universe metadata), all train split.
 
-    Features are ``close`` (the fund), plus ``underlying`` and ``vix`` when they are cached. A
+    Features are ``close`` (the fund), plus ``underlying`` and ``vix`` when they are cached, plus
+    any series the spec lists under ``universe.features`` (required: a missing one is an error). A
     date is a return date only if the fund and the risk-free rate both have a value; nothing is
     filled.
     """
@@ -126,6 +127,8 @@ def build_inputs(spec: HypothesisSpec) -> tuple[pd.DataFrame, pd.Series, pd.Seri
     for column, name in extras.items():
         if name and cache.has_series(directory, name):
             features[column] = load_prices(name, "train")[name].reindex(features.index)
+    for column, name in uni.features.items():
+        features[column] = load_prices(name, "train")[name].reindex(features.index)
     rf_name = cache.fred_name(RF_SERIES)
     rf = daily_risk_free(load_prices(rf_name, "train")[rf_name])
     returns = daily_returns(prices).dropna()

@@ -19,8 +19,9 @@ from dataclasses import dataclass, replace
 import numpy as np
 import pandas as pd
 
-from core.config import CONFIG_DIR, load_thresholds
+from core.config import CONFIG_DIR, load_lab_config, load_thresholds
 from core.data import cache
+from core.data.loaders import universe_series
 from core.data.synthetic import daily_returns, synthetic_returns
 from core.engine.backtest import BacktestResult, ExecutionConfig, daily_risk_free, run_backtest
 from core.engine.metrics import TRADING_DAYS, cagr
@@ -185,6 +186,25 @@ def _holdout_run(ctx: Context):
     return run
 
 
+def _require_holdout_series(spec: HypothesisSpec) -> None:
+    """Refuse before the hold-out is opened if it cannot hold a series the spec needs.
+
+    ``holdout.enc`` carries only the configured universe (``universe_series``). A spec that reads
+    anything else (a theory package's own fund or feature series) would crash inside the one
+    attempt, after the slice is decrypted, and burn it; so this runs first and costs nothing.
+    """
+    uni = spec.universe
+    needed = [*uni.features.values()]
+    if uni.research_universe == "real":
+        needed.append(uni.fund)
+    absent = sorted({n for n in needed if n not in set(universe_series(load_lab_config()))})
+    if absent:
+        raise RunError(
+            f"{spec.id}: the hold-out file has no data for {absent}; hold-out scoring supports "
+            "only series in the configured universe (config/lab.yaml)"
+        )
+
+
 def holdout_hypothesis(hypothesis_id: str, seed: int = JUDGE_SEED) -> dict:
     """Score the chosen point once on the hold-out; returns only pass/fail and a timestamp.
 
@@ -202,6 +222,7 @@ def holdout_hypothesis(hypothesis_id: str, seed: int = JUDGE_SEED) -> dict:
             "attempt"
         )
     ctx = prepare(hypothesis_id, frozen=True)
+    _require_holdout_series(ctx.spec)
     verdict = judge_hypothesis(hypothesis_id, seed=seed, ctx=ctx)
     if verdict["train_verdict"] != "advance":
         raise RunError(f"{hypothesis_id}: train verdict is reject; the hold-out is not scored")
