@@ -1,4 +1,4 @@
-"""Price and NAV loader for closed-end funds (train split only).
+"""Price and NAV loader for closed-end funds.
 
 Three series per fund go into the same parquet cache the core loaders use, each on one shared index
 of NYSE sessions where the price and the NAV both exist:
@@ -12,8 +12,13 @@ basis; the adjusted close is on a different basis (dividends folded in) and must
 NAV. A session missing from either source is dropped from all three and recorded in the sidecar's
 ``alignment_log``; nothing is filled.
 
-Only the train slice is cached. The hold-out slice of these series is not fetched into
-``holdout.enc`` (SPEC Section 8): see ``core.judge_runner._require_holdout_series``.
+This module only fetches and aligns. Splitting at ``holdout_start``, caching the train slice and
+encrypting the hold-out slice is ``core.data.loaders.pull``'s job: a fund listed under
+``universe.closed_end_funds`` in ``config/lab.yaml`` goes through the same path as every other
+series. ``fetch_fund_series`` is the fetcher it is given, and ``pull_cef`` runs that path for chosen
+funds alone (which never writes the hold-out file).
+
+``load_cef`` is the only way for this package to read the cached series back.
 
 Live fetching is a human-run path (``lab data cef``); tests inject recorded fixtures through the
 ``fetch_price`` / ``fetch_nav`` parameters.
@@ -25,16 +30,17 @@ import json
 import logging
 import urllib.request
 from collections.abc import Callable
-from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 
 from core.config import LabConfig, load_lab_config
 from core.data import cache
-from core.data.loaders import FetchError
+from core.data.cache import nav_name, px_name
+from core.data.loaders import FetchError, FundSeries, pull
 from core.data.nyse import normalize_index, nyse_sessions
-from core.data.splits import split_dates
+from core.data.splits import load_prices
 from theories.cef.funds import CEFCONNECT_URL, FUNDS, CefFund
 
 log = logging.getLogger(__name__)
@@ -44,14 +50,6 @@ MAX_DROPPED_SHARE = 0.01  # more sessions than this missing from either source i
 
 PriceFetcher = Callable[[str], pd.DataFrame]  # symbol -> frame with "close" and "adj_close"
 NavFetcher = Callable[[str], pd.Series]  # symbol -> NAV series
-
-
-def px_name(ticker: str) -> str:
-    return f"PX:{ticker}"
-
-
-def nav_name(ticker: str) -> str:
-    return f"NAV:{ticker}"
 
 
 def fetch_yfinance_both(symbol: str) -> pd.DataFrame:
@@ -142,6 +140,37 @@ def align_price_and_nav(
     return aligned, events
 
 
+def fetch_fund_series(
+    ticker: str,
+    *,
+    fetch_price: PriceFetcher = fetch_yfinance_both,
+    fetch_nav: NavFetcher = fetch_yfinance_nav,
+) -> FundSeries:
+    """Fetch and align a registered fund's price and NAV.
+
+    This is the fetcher ``core.data.loaders.pull`` is given for ``universe.closed_end_funds``.
+    """
+    fund: CefFund | None = FUNDS.get(ticker)
+    if fund is None:
+        raise FetchError(f"{ticker}: not a registered closed-end fund (theories/cef/funds.py)")
+    prices = fetch_price(ticker)
+    nav = fetch_nav(fund.nav_symbol)
+    aligned, events = align_price_and_nav(prices["close"], prices["adj_close"], nav, ticker)
+    return FundSeries(
+        series={
+            ticker: aligned["adj_close"],
+            px_name(ticker): aligned["close"],
+            nav_name(ticker): aligned["nav"],
+        },
+        sources={
+            ticker: "yfinance Ticker.history auto_adjust=True (total-return close)",
+            px_name(ticker): "yfinance Ticker.history auto_adjust=False (unadjusted close)",
+            nav_name(ticker): f"yfinance NAV symbol {fund.nav_symbol} (unadjusted daily NAV)",
+        },
+        events=events,
+    )
+
+
 def pull_cef(
     tickers: list[str] | None = None,
     *,
@@ -151,53 +180,59 @@ def pull_cef(
     fetch_nav: NavFetcher = fetch_yfinance_nav,
     cache_dir: Path | None = None,
 ) -> dict:
-    """Fetch, align, truncate to the train split and cache each fund's three series."""
+    """Run ``core.data.loaders.pull`` for the chosen funds only.
+
+    The funds must be registered here and listed under ``universe.closed_end_funds`` in the config,
+    because the split at ``holdout_start`` and the hold-out slice are decided there. This path
+    writes the train cache only; ``holdout.enc`` is rebuilt by a full ``lab data pull --refresh``.
+    """
     config = config or load_lab_config()
-    directory = cache_dir or cache.cache_dir()
-    train_end = split_dates(config).embargo_start
-    fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
-    status: dict[str, str] = {}
-    errors: list[str] = []
-    for ticker in tickers or list(FUNDS):
-        fund: CefFund | None = FUNDS.get(ticker)
-        if fund is None:
-            errors.append(f"{ticker}: not a registered closed-end fund (theories/cef/funds.py)")
-            continue
-        if not refresh and all(
-            cache.has_series(directory, n) for n in (ticker, px_name(ticker), nav_name(ticker))
-        ):
-            status[ticker] = "cached"
-            continue
-        try:
-            prices = fetch_price(ticker)
-            nav = fetch_nav(fund.nav_symbol)
-            aligned, events = align_price_and_nav(prices["close"], prices["adj_close"], nav, ticker)
-        except Exception as exc:
-            status[ticker] = "failed"
-            errors.append(f"{ticker}: {exc}")
-            continue
-        meta = {
-            "fetch_time": fetched_at,
-            "fill_policy": "none",
-            "train_end_exclusive": str(train_end.date()),
-            "alignment_log": events,
-            "theory": "cef",
-        }
-        sources = {
-            ticker: ("yfinance Ticker.history auto_adjust=True", "adj_close"),
-            px_name(ticker): ("yfinance Ticker.history auto_adjust=False", "close"),
-            nav_name(ticker): (f"yfinance NAV symbol {fund.nav_symbol}, auto_adjust=False", "nav"),
-        }
-        for name, (source, column) in sources.items():
-            series = aligned[column]
-            series = series[series.index < train_end]
-            cache.write_series(
-                directory, name, series, {**meta, "source": source, "adjustment": source}
-            )
-        status[ticker] = "fetched"
-    if errors:
-        raise FetchError("; ".join(errors))
-    return {"series": status, "fetched_at": fetched_at}
+    chosen = tickers or list(config.universe.closed_end_funds)
+    unregistered = [t for t in chosen if t not in FUNDS]
+    if unregistered:
+        raise FetchError(
+            f"{', '.join(unregistered)}: not a registered closed-end fund (theories/cef/funds.py)"
+        )
+    unlisted = [t for t in chosen if t not in config.universe.closed_end_funds]
+    if unlisted:
+        raise FetchError(
+            f"{', '.join(unlisted)}: not under universe.closed_end_funds in config/lab.yaml"
+        )
+    result = pull(
+        config,
+        refresh=refresh,
+        fetch_fund=lambda t: fetch_fund_series(t, fetch_price=fetch_price, fetch_nav=fetch_nav),
+        names=[n for t in chosen for n in cache.fund_series_names(t)],
+        cache_dir=cache_dir,
+    )
+    series = result["series"]
+    return {
+        "series": {t: series[t] for t in chosen},
+        "fetched_at": result["fetched_at"],
+    }
+
+
+def load_cef(
+    ticker: str,
+    split: Literal["train"] = "train",
+    *,
+    cache_dir: Path | None = None,
+    config: LabConfig | None = None,
+) -> pd.DataFrame:
+    """A fund's train-split series: ``adj_close``, ``close``, ``nav`` and ``premium``.
+
+    The only reader of cached closed-end fund data in this package. It goes through
+    ``core.data.splits.load_prices``, which reads the train cache and hard-truncates at the embargo
+    start, so no row on or after it is returned whatever the cache holds. ``premium`` is
+    ``close / nav - 1`` on the two unadjusted series.
+    """
+    if split != "train":
+        raise ValueError(f"load_cef only serves split='train', got {split!r}")
+    names = cache.fund_series_names(ticker)
+    frame = load_prices(names, "train", cache_dir=cache_dir, config=config)
+    out = frame.set_axis(["adj_close", "close", "nav"], axis=1)
+    out["premium"] = out["close"] / out["nav"] - 1
+    return out
 
 
 def compare_with_cefconnect(

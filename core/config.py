@@ -32,6 +32,7 @@ class Universe(_Strict):
     loaded_not_used: list[LeveragedFund]
     volatility: list[str]
     rates: list[RateSeries]
+    closed_end_funds: list[str] = Field(default_factory=list)
 
 
 class LabConfig(_Strict):

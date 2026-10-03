@@ -3,7 +3,7 @@ import pandas as pd
 
 from core.engine.backtest import check_leakage
 from core.engine.signal_api import compute_positions
-from theories.cef.signals.premium_reversion import make_signal
+from theories.cef.signals.discount_zscore import make_signal
 
 
 def _features(n=400, seed=1):
@@ -18,25 +18,25 @@ def test_long_after_an_unusually_wide_discount_and_cash_otherwise():
     f = _features()
     f.iloc[300, f.columns.get_loc("raw_close")] = f["nav"].iloc[300] * 0.6  # -40% discount
     pos = compute_positions(make_signal(63, 1.0), f)
-    assert pos.iloc[301] == 1.0  # the wide discount is public at the close of 300, acted on at 301
+    assert pos.iloc[300] == 1.0  # decided at the close of 300; the engine earns it on day 301
     assert pos.iloc[:63].eq(0).all()  # warm-up
     assert 0 < pos.mean() < 0.5
 
 
-def test_the_premium_used_on_day_t_is_the_one_measured_on_day_t_minus_1():
+def test_the_position_on_day_t_uses_the_premium_measured_on_day_t():
     f = _features()
     base = compute_positions(make_signal(63, 1.0), f)
     f2 = f.copy()
-    f2.iloc[350, f2.columns.get_loc("raw_close")] *= 0.5  # day 350's quote changes ...
+    f2.iloc[350, f2.columns.get_loc("raw_close")] = f2["nav"].iloc[350] * 0.6  # day 350's quote
     changed = compute_positions(make_signal(63, 1.0), f2)
-    assert changed.iloc[350] == base.iloc[350]  # ... but day 350's own position does not
-    assert changed.iloc[351] != base.iloc[351]
+    assert changed.iloc[350] == 1.0 and base.iloc[350] == 0.0  # the engine's lag is the only lag
+    assert changed.iloc[349] == base.iloc[349]  # nothing earlier moves
 
 
 def test_engine_leakage_check_passes_for_every_grid_point():
-    f = _features()
-    for window in (63, 126, 252):
-        for entry in (0.5, 1.0, 1.5):
+    f = _features(n=700)
+    for window in (126, 252, 504):
+        for entry in (1.0, 1.5, 2.0):
             assert check_leakage(make_signal(window, entry), f)
 
 

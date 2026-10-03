@@ -10,6 +10,7 @@ universe:
   rates:
     - {source: FRED, series: DFF}      # effective fed funds rate
     - {source: FRED, series: DGS3MO}
+  closed_end_funds: [ADX]              # theories/cef: price, PX:<t> (unadjusted) and NAV:<t> series
 holdout_start: 2024-07-01
 embargo_trading_days: 21               # excluded from both train and hold-out
 cost_bps: 5                            # per unit of turnover

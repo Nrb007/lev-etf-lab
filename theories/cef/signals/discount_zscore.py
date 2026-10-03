@@ -5,9 +5,11 @@ hold cash otherwise. This module is self-contained on purpose: the pre-registrat
 this file alone, so nothing it depends on can change underneath a registered hypothesis.
 
 Features used: ``raw_close`` (unadjusted price) and ``nav`` (unadjusted NAV). Premium is
-``raw_close / nav - 1``. A fund's NAV for day t is struck at the close and published after it, so
-the premium used on day t is the one measured on day t-1: the position on t is decided from
-information that was public at the close of t.
+``raw_close / nav - 1``. The signal for day t uses the premium measured at the close of day t and
+its trailing window ending on t; the engine's t-to-t+1 lag is the only lag, so the position earned
+on day t+1 is decided from information through the close of t (SPEC Section 5). A fund's NAV for
+day t is in practice published after the close, so using it at the close of t is a small timing
+idealization (docs/decisions.md).
 """
 
 from __future__ import annotations
@@ -19,14 +21,14 @@ import pandas as pd
 MIN_STD = 1e-4
 
 
-class PremiumReversion:
+class DiscountZScore:
     def __init__(self, window: int, entry_z: float):
-        self.name = f"cef_premium_reversion_{window}_{entry_z:g}"
+        self.name = f"cef_discount_zscore_{window}_{entry_z:g}"
         self.params = {"window": window, "entry_z": entry_z}
 
     def compute(self, features: pd.DataFrame) -> pd.Series:
         window, entry_z = self.params["window"], self.params["entry_z"]
-        premium = (features["raw_close"] / features["nav"] - 1).shift(1)
+        premium = features["raw_close"] / features["nav"] - 1
         mean = premium.rolling(window).mean()
         std = premium.rolling(window).std()
         z = (premium - mean) / std
@@ -34,5 +36,5 @@ class PremiumReversion:
         return ((z <= -entry_z) & (std > MIN_STD)).astype("float64").where(warm)
 
 
-def make_signal(window: int, entry_z: float) -> PremiumReversion:
-    return PremiumReversion(window, entry_z)
+def make_signal(window: int, entry_z: float) -> DiscountZScore:
+    return DiscountZScore(window, entry_z)

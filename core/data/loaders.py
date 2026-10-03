@@ -10,7 +10,8 @@ from __future__ import annotations
 import io
 import logging
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -40,6 +41,24 @@ ADJUSTMENT = {
 
 PriceFetcher = Callable[[str], pd.Series]
 RateFetcher = Callable[[str], pd.Series]
+
+
+@dataclass(frozen=True)
+class FundSeries:
+    """One closed-end fund's full-history series, aligned to each other by its theory loader.
+
+    ``series`` maps each cache name (``cache.fund_series_names``) to its series; ``sources``
+    describes where each came from; ``events`` is the loader's own alignment log. A session the
+    loader dropped from all three stays absent: ``pull`` does not reindex these series to the
+    calendar, so no NaN rows appear.
+    """
+
+    series: dict[str, pd.Series]
+    sources: dict[str, str]
+    events: list[dict]
+
+
+FundFetcher = Callable[[str], FundSeries]
 
 
 class FetchError(RuntimeError):
@@ -134,7 +153,12 @@ def universe_series(config: LabConfig) -> list[str]:
         *(f.ticker for f in u.loaded_not_used),
         *u.volatility,
     ]
-    return [*dict.fromkeys(tickers), *(cache.fred_name(r.series) for r in u.rates)]
+    funds = [n for t in u.closed_end_funds for n in cache.fund_series_names(t)]
+    return [
+        *dict.fromkeys(tickers),
+        *(cache.fred_name(r.series) for r in u.rates),
+        *dict.fromkeys(funds),
+    ]
 
 
 def pull(
@@ -143,6 +167,8 @@ def pull(
     refresh: bool = False,
     fetch_price: PriceFetcher = fetch_yfinance,
     fetch_rate: RateFetcher = fetch_fred,
+    fetch_fund: FundFetcher | None = None,
+    names: Sequence[str] | None = None,
     cache_dir: Path | None = None,
     holdout_path: Path | None = None,
     holdout_key: bytes | str | None = None,
@@ -152,26 +178,54 @@ def pull(
     Full history is fetched per series. Only the train slice is cached; the hold-out slice goes to
     ``holdout_path`` (Fernet-encrypted with ``holdout_key``) and only when every series was fetched
     in this run and a key was supplied. Existing cache entries are kept unless ``refresh``.
+
+    A closed-end fund (``universe.closed_end_funds``) is three series fetched together by
+    ``fetch_fund`` (a theory package's loader) and cached together: all three are kept or all three
+    re-fetched. ``names`` restricts the run to those series; a restricted run never writes the
+    hold-out file, which must always be built from the whole universe.
     """
     config = config or load_lab_config()
     directory = cache_dir or cache.cache_dir()
     holdout_path = holdout_path or cache.holdout_path()
     dates = split_dates(config)
     fetched_at = datetime.now(UTC).isoformat(timespec="seconds")
-    names = universe_series(config)
+    names = universe_series(config) if names is None else list(names)
+    restricted = set(names) != set(universe_series(config))
+    fund_of = {n: t for t in config.universe.closed_end_funds for n in cache.fund_series_names(t)}
+    group_cached = {
+        t: all(cache.has_series(directory, n) for n in cache.fund_series_names(t))
+        for t in config.universe.closed_end_funds
+    }
+    fund_fetched: dict[str, FundSeries] = {}
 
     status: dict[str, str] = {}
     errors: list[str] = []
     holdout_slices: dict[str, pd.Series] = {}
 
     for name in names:
-        if not refresh and cache.has_series(directory, name):
+        if name in fund_of:
+            already = group_cached[fund_of[name]]
+        else:
+            already = cache.has_series(directory, name)
+        if not refresh and already:
             status[name] = "cached"
             log.info("%s: cached, skipping (use --refresh to re-fetch)", name)
             continue
         rate = cache.is_rate(name)
+        fund_events: list[dict] = []
         try:
-            raw = fetch_rate(name.removeprefix(cache.FRED_PREFIX)) if rate else fetch_price(name)
+            if name in fund_of:
+                ticker = fund_of[name]
+                if fetch_fund is None:
+                    raise FetchError("no closed-end fund fetcher was supplied")
+                if ticker not in fund_fetched:
+                    fund_fetched[ticker] = fetch_fund(ticker)
+                raw = fund_fetched[ticker].series[name]
+                fund_events = fund_fetched[ticker].events
+            elif rate:
+                raw = fetch_rate(name.removeprefix(cache.FRED_PREFIX))
+            else:
+                raw = fetch_price(name)
         except Exception as exc:
             if name in OPTIONAL_TICKERS:
                 status[name] = "unavailable_optional"
@@ -185,11 +239,19 @@ def pull(
         raw = raw.copy()
         raw.index = normalize_index(raw.index)
         raw_train, raw_holdout = split_frame(raw.sort_index(), dates)
-        train, events = align_to_calendar(raw_train, name, fill=fill)
-        holdout, _ = align_to_calendar(raw_holdout, name, fill=fill)
+        if name in fund_of:
+            train, holdout, events = raw_train.rename(name), raw_holdout.rename(name), []
+        else:
+            train, events = align_to_calendar(raw_train, name, fill=fill)
+            holdout, _ = align_to_calendar(raw_holdout, name, fill=fill)
         holdout_slices[name] = holdout
 
-        if rate:
+        if name in fund_of:
+            described = fund_fetched[fund_of[name]].sources[name]
+            source = {"source": described}
+            adjustment = {"note": described}
+            events = [*fund_events, *events]
+        elif rate:
             source = {"source": "FRED", "url": FRED_URL.format(series=name.split(":", 1)[1])}
             adjustment = {"note": "percent per annum, as published; no adjustment"}
         else:
@@ -213,7 +275,9 @@ def pull(
 
     holdout_written = False
     fetched_all = all(s == "fetched" or s == "unavailable_optional" for s in status.values())
-    if holdout_slices and fetched_all and not errors:
+    if restricted:
+        log.info("restricted pull: %s not written", holdout_path.name)
+    elif holdout_slices and fetched_all and not errors:
         if holdout_key is None:
             log.warning("no hold-out key supplied; %s not written", holdout_path.name)
         else:

@@ -50,6 +50,21 @@ def is_rate(name: str) -> bool:
     return name.startswith(FRED_PREFIX)
 
 
+def px_name(ticker: str) -> str:
+    """Cache name of a fund's unadjusted close, as quoted."""
+    return f"PX:{ticker}"
+
+
+def nav_name(ticker: str) -> str:
+    """Cache name of a fund's unadjusted daily NAV, as published."""
+    return f"NAV:{ticker}"
+
+
+def fund_series_names(ticker: str) -> list[str]:
+    """The three cache names a closed-end fund is stored under (adjusted close, quote, NAV)."""
+    return [ticker, px_name(ticker), nav_name(ticker)]
+
+
 def series_key(name: str) -> str:
     """Filesystem-safe cache key: ``^VIX`` -> ``IDX_VIX``, ``FRED:DFF`` -> ``FRED_DFF``."""
     return name.replace("^", "IDX_").replace(":", "_")
